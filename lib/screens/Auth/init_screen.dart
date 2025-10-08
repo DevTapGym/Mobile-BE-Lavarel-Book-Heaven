@@ -37,34 +37,38 @@ class _InitScreenState extends State<InitScreen> {
       final isActive = await _secureStorage.read(key: 'is_active');
 
       if (accessToken == null || accessToken.isEmpty) {
-        print('❌ [InitScreen] Không tìm thấy access token → Chuyển sang Login');
+        debugPrint(
+          '❌ [InitScreen] Không tìm thấy access token → Chuyển sang Login',
+        );
         _navigateToLogin();
         return;
       }
       if (isActive == null) {
-        print('⚠️ [InitScreen] Không tìm thấy is_active → Chuyển sang Login');
+        debugPrint(
+          '⚠️ [InitScreen] Không tìm thấy is_active → Chuyển sang Login',
+        );
         _navigateToLogin();
         return;
       }
       if (_isTokenExpired(accessToken)) {
-        print('⏰ [InitScreen] Token đã hết hạn → Thử refresh token');
+        debugPrint('⏰ [InitScreen] Token đã hết hạn → Thử refresh token');
         if (mounted) {
           await _handleRefreshToken();
         }
       }
       if (isActive == '0') {
-        print('🎉 [InitScreen] Người dùng chưa xác thực → Login');
+        debugPrint('🎉 [InitScreen] Người dùng chưa xác thực → Login');
         if (mounted) {
           _navigateToLogin();
         }
       } else {
-        print('🎉 [InitScreen] Token còn hạn → Chuyển thẳng vào Main');
+        debugPrint('🎉 [InitScreen] Token còn hạn → Chuyển thẳng vào Main');
         if (mounted) {
           _navigateToMain();
         }
       }
     } catch (e) {
-      print(
+      debugPrint(
         '🚨 [InitScreen] Lỗi khi kiểm tra auto login: $e → Chuyển sang Login',
       );
       _navigateToLogin();
@@ -73,7 +77,7 @@ class _InitScreenState extends State<InitScreen> {
 
   Future<void> _handleRefreshToken() async {
     try {
-      print('⏳ [InitScreen] Bắt đầu refresh token...');
+      debugPrint('⏳ [InitScreen] Bắt đầu refresh token...');
 
       // Trigger refresh token và đợi kết quả
       _authBloc.add(AppStarted());
@@ -81,13 +85,15 @@ class _InitScreenState extends State<InitScreen> {
       // Listen for result one time only
       await for (final state in _authBloc.stream) {
         if (state is AuthSuccess) {
-          print('🎉 [InitScreen] Refresh token thành công → Chuyển vào Main');
+          debugPrint(
+            '🎉 [InitScreen] Refresh token thành công → Chuyển vào Main',
+          );
           if (mounted) {
             _navigateToMain();
           }
           break;
         } else if (state is AuthFailure) {
-          print('❌ [InitScreen] Refresh token thất bại: ${state.message}');
+          debugPrint('❌ [InitScreen] Refresh token thất bại: ${state.message}');
           if (mounted) {
             _navigateToLogin();
           }
@@ -96,7 +102,7 @@ class _InitScreenState extends State<InitScreen> {
         // Ignore AuthLoading, continue listening
       }
     } catch (e) {
-      print('🚨 [InitScreen] Lỗi refresh token: $e');
+      debugPrint('🚨 [InitScreen] Lỗi refresh token: $e');
       if (mounted) {
         _navigateToLogin();
       }
@@ -124,9 +130,11 @@ class _InitScreenState extends State<InitScreen> {
       final now = DateTime.now();
       final bufferedExpTime = expTime.subtract(const Duration(minutes: 5));
 
-      print('📅 [InitScreen] Token hết hạn lúc: $expTime');
-      print('📅 [InitScreen] Thời gian hiện tại: $now');
-      print('📅 [InitScreen] Thời gian buffer (trừ 5 phút): $bufferedExpTime');
+      debugPrint('📅 [InitScreen] Token hết hạn lúc: $expTime');
+      debugPrint('📅 [InitScreen] Thời gian hiện tại: $now');
+      debugPrint(
+        '📅 [InitScreen] Thời gian buffer (trừ 5 phút): $bufferedExpTime',
+      );
 
       final isExpired = bufferedExpTime.isBefore(now);
 

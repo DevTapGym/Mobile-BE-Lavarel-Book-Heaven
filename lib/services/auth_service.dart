@@ -127,7 +127,7 @@ class AuthService {
           if (cookies.isNotEmpty) {
             final uri = Uri.parse(_publicDio.options.baseUrl);
             await _cookieJar.saveFromResponse(uri, cookies);
-            print('✅ Refresh token đã được lưu thành công');
+            debugPrint('✅ Refresh token đã được lưu thành công');
           } else {
             throw Exception('Không tìm thấy refresh_token trong header');
           }
@@ -145,7 +145,7 @@ class AuthService {
 
         // Check xem đã lưu thành công chưa
         final savedIsActive = await _secureStorage.read(key: 'is_active');
-        print(
+        debugPrint(
           '🔍 [Login Check] Is Active đã lưu: ${savedIsActive != null ? "✅ Có ($savedIsActive)" : "❌ Không"}',
         );
 
@@ -215,7 +215,7 @@ class AuthService {
 
           if (cookies.isNotEmpty) {
             await _cookieJar.saveFromResponse(uri, cookies);
-            print('✅ Refresh token mới đã được lưu thành công');
+            debugPrint('✅ Refresh token mới đã được lưu thành công');
           } else {
             throw Exception('Server không trả về refresh token mới');
           }
@@ -303,8 +303,8 @@ class AuthService {
 
   Future<void> _handleTokenExpired() async {
     await _secureStorage.deleteAll();
-    // ignore: avoid_print
-    print('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    // ignore: avoid_debugPrint
+    debugPrint('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   }
 
   Future<Map<String, dynamic>> logout() async {
@@ -349,7 +349,7 @@ class AuthService {
     final uri = Uri.parse(_publicDio.options.baseUrl);
     await _cookieJar.delete(uri, true);
 
-    print(
+    debugPrint(
       '🧹 [AuthService] Hoàn tất cleanup: access token + refresh token + user data',
     );
   }
