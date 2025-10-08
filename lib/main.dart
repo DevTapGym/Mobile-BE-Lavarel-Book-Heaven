@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_event.dart';
+import 'package:heaven_book_app/repositories/book_repository.dart';
 import 'package:heaven_book_app/screens/Cart/check_out_screen.dart';
 import 'package:heaven_book_app/screens/Home/detail_review_screen.dart';
 import 'package:heaven_book_app/screens/Home/detail_screen.dart';
@@ -18,7 +22,18 @@ import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
 void main() {
-  runApp(const MyApp());
+  final bookRepository = BookRepository();
+
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<BookBloc>(
+          create: (_) => BookBloc(bookRepository)..add(LoadBooks()),
+        ),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

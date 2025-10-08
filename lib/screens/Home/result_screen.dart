@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_event.dart';
+import 'package:heaven_book_app/bloc/book/book_state.dart';
+import 'package:heaven_book_app/bloc/category/category_bloc.dart';
+import 'package:heaven_book_app/bloc/category/category_state.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
+import 'package:heaven_book_app/model/book.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 
 class ResultScreen extends StatefulWidget {
   final String? searchQuery;
@@ -18,12 +26,12 @@ class ResultScreen extends StatefulWidget {
 }
 
 class _ResultScreenState extends State<ResultScreen> {
-  List<Map<String, dynamic>> _books = [];
-  List<Map<String, dynamic>> _filteredBooks = [];
   String _selectedSortOption = 'Popular';
-  String _selectedViewType = 'grid'; // grid or list
-  bool _isLoading = false;
+  String _selectedViewType = 'grid';
   final TextEditingController _searchController = TextEditingController();
+  bool _isInitialized = false;
+  String _selectedCategory = 'All';
+  bool _categoryInitialized = false;
 
   final List<String> _sortOptions = [
     'Popular',
@@ -34,281 +42,46 @@ class _ResultScreenState extends State<ResultScreen> {
     'Title A-Z',
   ];
 
-  final List<String> _categories = [
-    'All',
-    'Fiction',
-    'Science Fiction',
-    'Mystery',
-    'Romance',
-    'Biography',
-    'Self-Help',
-    'History',
-    'Technology',
-    'Children',
-  ];
-
-  String _selectedCategory = 'All';
-
   @override
   void initState() {
     super.initState();
-    _loadSampleBooks();
     _searchController.text = widget.searchQuery ?? '';
     _selectedCategory = widget.category ?? 'All';
-    _filterBooks();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitialized) {
+      _isInitialized = true;
+
+      // CategoryBloc đã được provide từ HomeScreen, không cần load lại
+
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+      if (args != null) {
+        final type = args['type'];
+        final query = args['query'];
+
+        if (type == 'search' && query != null) {
+          context.read<BookBloc>().add(LoadSearchBooks(query));
+        } else if (type == 'filter' && query != null) {
+          context.read<BookBloc>().add(LoadCategoryBooks(query));
+        } else {
+          context.read<BookBloc>().add(LoadBooks());
+        }
+      } else {
+        context.read<BookBloc>().add(LoadBooks());
+      }
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _loadSampleBooks() {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate loading delay
-    Future.delayed(const Duration(milliseconds: 800), () {
-      setState(() {
-        _books = _getSampleBooks();
-        _isLoading = false;
-        _filterBooks();
-      });
-    });
-  }
-
-  List<Map<String, dynamic>> _getSampleBooks() {
-    return [
-      {
-        'id': '1',
-        'title': 'The Great Gatsby',
-        'author': 'F. Scott Fitzgerald',
-        'price': 12.99,
-        'originalPrice': 15.99,
-        'rating': 4.5,
-        'reviewCount': 1250,
-        'category': 'Fiction',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 19,
-        'tags': ['classic', 'american literature'],
-        'description': 'A classic American novel set in the Jazz Age.',
-      },
-      {
-        'id': '2',
-        'title': 'To Kill a Mockingbird',
-        'author': 'Harper Lee',
-        'price': 10.99,
-        'originalPrice': 13.99,
-        'rating': 4.8,
-        'reviewCount': 2100,
-        'category': 'Fiction',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 21,
-        'tags': ['classic', 'drama'],
-        'description':
-            'A gripping tale of racial injustice and childhood innocence.',
-      },
-      {
-        'id': '3',
-        'title': 'Dune',
-        'author': 'Frank Herbert',
-        'price': 16.99,
-        'originalPrice': 19.99,
-        'rating': 4.7,
-        'reviewCount': 1850,
-        'category': 'Science Fiction',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 15,
-        'tags': ['epic', 'space opera'],
-        'description':
-            'A science fiction masterpiece about politics, religion, and ecology.',
-      },
-      {
-        'id': '4',
-        'title': '1984',
-        'author': 'George Orwell',
-        'price': 11.99,
-        'originalPrice': 14.99,
-        'rating': 4.6,
-        'reviewCount': 3200,
-        'category': 'Fiction',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 20,
-        'tags': ['dystopian', 'political'],
-        'description': 'A dystopian social science fiction novel.',
-      },
-      {
-        'id': '5',
-        'title': 'The Girl with the Dragon Tattoo',
-        'author': 'Stieg Larsson',
-        'price': 13.99,
-        'originalPrice': 16.99,
-        'rating': 4.4,
-        'reviewCount': 1650,
-        'category': 'Mystery',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 18,
-        'tags': ['thriller', 'crime'],
-        'description': 'A psychological thriller mystery novel.',
-      },
-      {
-        'id': '6',
-        'title': 'Pride and Prejudice',
-        'author': 'Jane Austen',
-        'price': 9.99,
-        'originalPrice': 12.99,
-        'rating': 4.7,
-        'reviewCount': 2800,
-        'category': 'Romance',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 23,
-        'tags': ['classic', 'romance'],
-        'description': 'A romantic novel of manners.',
-      },
-      {
-        'id': '7',
-        'title': 'Steve Jobs',
-        'author': 'Walter Isaacson',
-        'price': 18.99,
-        'originalPrice': 22.99,
-        'rating': 4.5,
-        'reviewCount': 1200,
-        'category': 'Biography',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 17,
-        'tags': ['biography', 'technology'],
-        'description': 'The exclusive biography of Steve Jobs.',
-      },
-      {
-        'id': '8',
-        'title': 'Atomic Habits',
-        'author': 'James Clear',
-        'price': 15.99,
-        'originalPrice': 18.99,
-        'rating': 4.8,
-        'reviewCount': 4500,
-        'category': 'Self-Help',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 16,
-        'tags': ['productivity', 'habits'],
-        'description': 'An easy and proven way to build good habits.',
-      },
-      {
-        'id': '9',
-        'title': 'Sapiens',
-        'author': 'Yuval Noah Harari',
-        'price': 17.99,
-        'originalPrice': 21.99,
-        'rating': 4.6,
-        'reviewCount': 3100,
-        'category': 'History',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 18,
-        'tags': ['anthropology', 'history'],
-        'description': 'A brief history of humankind.',
-      },
-      {
-        'id': '10',
-        'title': 'Clean Code',
-        'author': 'Robert C. Martin',
-        'price': 24.99,
-        'originalPrice': 29.99,
-        'rating': 4.5,
-        'reviewCount': 850,
-        'category': 'Technology',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 17,
-        'tags': ['programming', 'software'],
-        'description': 'A handbook of agile software craftsmanship.',
-      },
-      {
-        'id': '11',
-        'title': 'Harry Potter and the Philosopher\'s Stone',
-        'author': 'J.K. Rowling',
-        'price': 8.99,
-        'originalPrice': 10.99,
-        'rating': 4.9,
-        'reviewCount': 5200,
-        'category': 'Children',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 18,
-        'tags': ['fantasy', 'magic'],
-        'description': 'The boy who lived begins his magical journey.',
-      },
-      {
-        'id': '12',
-        'title': 'The Alchemist',
-        'author': 'Paulo Coelho',
-        'price': 12.99,
-        'originalPrice': 15.99,
-        'rating': 4.3,
-        'reviewCount': 2400,
-        'category': 'Fiction',
-        'imageUrl': 'https://via.placeholder.com/150x200',
-        'discount': 19,
-        'tags': ['philosophical', 'journey'],
-        'description': 'A philosophical book about following your dreams.',
-      },
-    ];
-  }
-
-  void _filterBooks() {
-    setState(() {
-      _filteredBooks =
-          _books.where((book) {
-            bool matchesSearch = true;
-            bool matchesCategory = true;
-
-            // Search filter
-            if (_searchController.text.isNotEmpty) {
-              final query = _searchController.text.toLowerCase();
-              matchesSearch =
-                  book['title'].toString().toLowerCase().contains(query) ||
-                  book['author'].toString().toLowerCase().contains(query) ||
-                  book['category'].toString().toLowerCase().contains(query) ||
-                  (book['tags'] as List).any(
-                    (tag) => tag.toString().toLowerCase().contains(query),
-                  );
-            }
-
-            // Category filter
-            if (_selectedCategory != 'All') {
-              matchesCategory = book['category'] == _selectedCategory;
-            }
-
-            return matchesSearch && matchesCategory;
-          }).toList();
-
-      _sortBooks();
-    });
-  }
-
-  void _sortBooks() {
-    switch (_selectedSortOption) {
-      case 'Price: Low to High':
-        _filteredBooks.sort((a, b) => a['price'].compareTo(b['price']));
-        break;
-      case 'Price: High to Low':
-        _filteredBooks.sort((a, b) => b['price'].compareTo(a['price']));
-        break;
-      case 'Rating':
-        _filteredBooks.sort((a, b) => b['rating'].compareTo(a['rating']));
-        break;
-      case 'Newest':
-        // Simulate newest first (using id as proxy)
-        _filteredBooks.sort((a, b) => b['id'].compareTo(a['id']));
-        break;
-      case 'Title A-Z':
-        _filteredBooks.sort((a, b) => a['title'].compareTo(b['title']));
-        break;
-      default: // Popular
-        _filteredBooks.sort(
-          (a, b) => b['reviewCount'].compareTo(a['reviewCount']),
-        );
-        break;
-    }
   }
 
   String _getPageTitle() {
@@ -318,6 +91,8 @@ class _ResultScreenState extends State<ResultScreen> {
       return widget.category!;
     } else if (widget.sectionTitle != null) {
       return widget.sectionTitle!;
+    } else if (_selectedCategory != 'All') {
+      return _selectedCategory;
     }
     return 'Books';
   }
@@ -326,9 +101,11 @@ class _ResultScreenState extends State<ResultScreen> {
     if (widget.searchQuery?.isNotEmpty == true) {
       return 'for "${widget.searchQuery}"';
     } else if (widget.category != null) {
-      return '${_filteredBooks.length} books found';
+      return 'books found';
+    } else if (_selectedCategory != 'All') {
+      return 'books in this category';
     }
-    return '${_filteredBooks.length} books available';
+    return 'books available';
   }
 
   @override
@@ -376,23 +153,116 @@ class _ResultScreenState extends State<ResultScreen> {
       ),
       body: Column(
         children: [
-          // Search and Filter Bar
           _buildSearchAndFilterBar(),
 
           // Results
           Expanded(
-            child:
-                _isLoading
-                    ? _buildLoadingWidget()
-                    : _filteredBooks.isEmpty
-                    ? _buildEmptyWidget()
-                    : _selectedViewType == 'grid'
-                    ? _buildGridView()
-                    : _buildListView(),
+            child: BlocBuilder<BookBloc, BookState>(
+              builder: (context, state) {
+                if (state is BookLoading) {
+                  return _buildLoadingWidget();
+                } else if (state is BookSearchLoaded) {
+                  final books = state.searchResults;
+                  return _buildBooksResult(books);
+                } else if (state is BookLoadAll) {
+                  final books = state.allBooks;
+                  return _buildBooksResult(books);
+                } else if (state is BookCategoryLoaded) {
+                  final books = state.categoryBooks;
+                  return _buildBooksResult(books);
+                } else if (state is BookError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 80,
+                            color: Colors.red[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error loading books',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            state.message,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.red,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                return _buildLoadingWidget();
+              },
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildBooksResult(List<Book> books) {
+    // Filter books based on search query
+    List<Book> filteredBooks = books;
+
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      filteredBooks =
+          books.where((book) {
+            return book.title.toLowerCase().contains(query) ||
+                book.author.toLowerCase().contains(query) ||
+                (book.description?.toLowerCase().contains(query) ?? false);
+          }).toList();
+    }
+
+    // Sort books
+    _sortBooks(filteredBooks);
+
+    if (filteredBooks.isEmpty) {
+      return _buildEmptyWidget();
+    }
+
+    return _selectedViewType == 'grid'
+        ? _buildGridView(filteredBooks)
+        : _buildListView(filteredBooks);
+  }
+
+  void _sortBooks(List<Book> books) {
+    switch (_selectedSortOption) {
+      case 'Price: Low to High':
+        books.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'Price: High to Low':
+        books.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'Rating':
+        // Since Book model doesn't have rating, we'll sort by sold (popularity)
+        books.sort((a, b) => b.sold.compareTo(a.sold));
+        break;
+      case 'Newest':
+        // Simulate newest first (using id as proxy)
+        books.sort((a, b) => b.id.compareTo(a.id));
+        break;
+      case 'Title A-Z':
+        books.sort((a, b) => a.title.compareTo(b.title));
+        break;
+      default: // Popular
+        books.sort((a, b) => b.sold.compareTo(a.sold));
+        break;
+    }
   }
 
   Widget _buildSearchAndFilterBar() {
@@ -420,8 +290,9 @@ class _ResultScreenState extends State<ResultScreen> {
                         ? IconButton(
                           icon: const Icon(Icons.clear),
                           onPressed: () {
-                            _searchController.clear();
-                            _filterBooks();
+                            setState(() {
+                              _searchController.clear();
+                            });
                           },
                         )
                         : null,
@@ -431,7 +302,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onChanged: (value) => _filterBooks(),
+              onChanged: (value) => setState(() {}),
             ),
           ),
 
@@ -442,36 +313,110 @@ class _ResultScreenState extends State<ResultScreen> {
             children: [
               // Category Filter
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedCategory,
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: AppColors.primaryDark,
+                child: BlocBuilder<CategoryBloc, CategoryState>(
+                  builder: (context, state) {
+                    List<String> categoryNames = ['All'];
+
+                    if (state is CategoryLoaded) {
+                      categoryNames.addAll(
+                        state.categories
+                            .map((category) => category.name)
+                            .toList(),
+                      );
+
+                      // Kiểm tra xem có cần cập nhật selected category từ arguments không
+                      final args =
+                          ModalRoute.of(context)?.settings.arguments
+                              as Map<String, dynamic>?;
+                      if (args != null &&
+                          args['type'] == 'filter' &&
+                          args['query'] != null &&
+                          !_categoryInitialized) {
+                        final categoryId = args['query'] as int;
+                        final matchedCategories = state.categories.where(
+                          (cat) => cat.id == categoryId,
+                        );
+                        final matchedCategory =
+                            matchedCategories.isNotEmpty
+                                ? matchedCategories.first
+                                : null;
+                        if (matchedCategory != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() {
+                                _selectedCategory = matchedCategory.name;
+                                _categoryInitialized = true;
+                              });
+                            }
+                          });
+                        }
+                      }
+                    }
+
+                    // Chỉ reset về 'All' nếu _selectedCategory thực sự không hợp lệ
+                    // và đã hoàn tất quá trình khởi tạo
+                    if (!categoryNames.contains(_selectedCategory) &&
+                        state is CategoryLoaded &&
+                        _categoryInitialized) {
+                      _selectedCategory = 'All';
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      items:
-                          _categories.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            );
-                          }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value!;
-                          _filterBooks();
-                        });
-                      },
-                    ),
-                  ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCategory,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: AppColors.primaryDark,
+                          ),
+                          items:
+                              categoryNames.map((category) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category),
+                                );
+                              }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value!;
+                              _categoryInitialized = true;
+
+                              // Thực hiện filtering theo category
+                              if (_selectedCategory == 'All') {
+                                // Load tất cả sách
+                                context.read<BookBloc>().add(LoadAllBooks());
+                              } else {
+                                // Tìm category ID từ CategoryBloc state
+                                final categoryState =
+                                    context.read<CategoryBloc>().state;
+                                if (categoryState is CategoryLoaded) {
+                                  final selectedCategoryObj = categoryState
+                                      .categories
+                                      .firstWhere(
+                                        (cat) => cat.name == _selectedCategory,
+                                        orElse:
+                                            () =>
+                                                categoryState.categories.first,
+                                      );
+                                  // Load sách theo category ID
+                                  context.read<BookBloc>().add(
+                                    LoadCategoryBooks(selectedCategoryObj.id),
+                                  );
+                                }
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -507,7 +452,6 @@ class _ResultScreenState extends State<ResultScreen> {
                       onChanged: (value) {
                         setState(() {
                           _selectedSortOption = value!;
-                          _sortBooks();
                         });
                       },
                     ),
@@ -563,7 +507,8 @@ class _ResultScreenState extends State<ResultScreen> {
               setState(() {
                 _searchController.clear();
                 _selectedCategory = 'All';
-                _filterBooks();
+                // Load lại tất cả sách khi clear filters
+                context.read<BookBloc>().add(LoadAllBooks());
               });
             },
             style: ElevatedButton.styleFrom(
@@ -578,7 +523,7 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildGridView() {
+  Widget _buildGridView(List<Book> books) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: GridView.builder(
@@ -588,25 +533,25 @@ class _ResultScreenState extends State<ResultScreen> {
           mainAxisSpacing: 16,
           childAspectRatio: 0.55,
         ),
-        itemCount: _filteredBooks.length,
+        itemCount: books.length,
         itemBuilder: (context, index) {
-          return _buildBookGridCard(_filteredBooks[index]);
+          return _buildBookGridCard(books[index]);
         },
       ),
     );
   }
 
-  Widget _buildListView() {
+  Widget _buildListView(List<Book> books) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _filteredBooks.length,
+      itemCount: books.length,
       itemBuilder: (context, index) {
-        return _buildBookListCard(_filteredBooks[index]);
+        return _buildBookListCard(books[index]);
       },
     );
   }
 
-  Widget _buildBookGridCard(Map<String, dynamic> book) {
+  Widget _buildBookGridCard(Book book) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -642,7 +587,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 ),
               ),
               // Discount Badge
-              if (book['discount'] > 0)
+              if (book.saleOff > 0)
                 Positioned(
                   top: 8,
                   right: 8,
@@ -656,7 +601,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '-${book['discount']}%',
+                      '-${book.saleOff.toInt()}%',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -704,7 +649,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    book['title'],
+                    book.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -715,7 +660,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    book['author'],
+                    book.author,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -726,14 +671,14 @@ class _ResultScreenState extends State<ResultScreen> {
                       const Icon(Icons.star, color: Colors.amber, size: 14),
                       const SizedBox(width: 2),
                       Text(
-                        book['rating'].toString(),
+                        '4.5', // Since Book model doesn't have rating, using placeholder
                         style: const TextStyle(fontSize: 12),
                       ),
                       const SizedBox(width: 6),
                       Container(width: 1, height: 12, color: Colors.grey[600]),
                       const SizedBox(width: 6),
                       Text(
-                        '22 sold',
+                        '${book.sold} sold',
                         style: TextStyle(fontSize: 12, color: Colors.grey[800]),
                       ),
                     ],
@@ -742,18 +687,20 @@ class _ResultScreenState extends State<ResultScreen> {
                   Row(
                     children: [
                       Text(
-                        '\$${book['price'].toStringAsFixed(2)}',
+                        FormatPrice.formatPrice(
+                          book.price * (1 - book.saleOff / 100),
+                        ),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primaryDark,
                         ),
                       ),
-                      if (book['originalPrice'] != null)
+                      if (book.saleOff > 0)
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: Text(
-                            '\$${book['originalPrice'].toStringAsFixed(2)}',
+                            FormatPrice.formatPrice(book.price),
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[500],
@@ -772,7 +719,7 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildBookListCard(Map<String, dynamic> book) {
+  Widget _buildBookListCard(Book book) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -807,13 +754,13 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 ),
               ),
-              if (book['discount'] > 0)
+              if (book.saleOff > 0)
                 Positioned(
                   top: 6,
                   right: 6,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
+                      horizontal: 6,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
@@ -821,7 +768,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '-${book['discount']}%',
+                      '-${book.saleOff.toInt()}%',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -845,7 +792,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        book['title'],
+                        book.title,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -866,17 +813,19 @@ class _ResultScreenState extends State<ResultScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  book['author'],
+                  book.author,
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  book['category'],
+                  book.description ?? 'No description',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -884,14 +833,14 @@ class _ResultScreenState extends State<ResultScreen> {
                     const Icon(Icons.star, color: Colors.amber, size: 16),
                     const SizedBox(width: 4),
                     Text(
-                      '${book['rating']} (${book['reviewCount']})',
+                      '4.5 (${book.sold})',
                       style: const TextStyle(fontSize: 12),
                     ),
                     const SizedBox(width: 4),
                     Container(width: 1, height: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      '23 sold',
+                      '${book.sold} sold',
                       style: TextStyle(fontSize: 12, color: Colors.grey[800]),
                     ),
                   ],
@@ -900,18 +849,20 @@ class _ResultScreenState extends State<ResultScreen> {
                 Row(
                   children: [
                     Text(
-                      '\$${book['price'].toStringAsFixed(2)}',
+                      FormatPrice.formatPrice(
+                        book.price * (1 - book.saleOff / 100),
+                      ),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryDark,
                       ),
                     ),
-                    if (book['originalPrice'] != null)
+                    if (book.saleOff > 0)
                       Padding(
                         padding: const EdgeInsets.only(left: 8),
                         child: Text(
-                          '\$${book['originalPrice'].toStringAsFixed(2)}',
+                          FormatPrice.formatPrice(book.price),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[500],

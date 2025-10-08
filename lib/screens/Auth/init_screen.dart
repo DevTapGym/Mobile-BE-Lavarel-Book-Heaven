@@ -34,9 +34,15 @@ class _InitScreenState extends State<InitScreen> {
   Future<void> _checkAutoLogin() async {
     try {
       final accessToken = await _secureStorage.read(key: 'access_token');
+      final isActive = await _secureStorage.read(key: 'is_active');
 
       if (accessToken == null || accessToken.isEmpty) {
         print('❌ [InitScreen] Không tìm thấy access token → Chuyển sang Login');
+        _navigateToLogin();
+        return;
+      }
+      if (isActive == null) {
+        print('⚠️ [InitScreen] Không tìm thấy is_active → Chuyển sang Login');
         _navigateToLogin();
         return;
       }
@@ -44,6 +50,12 @@ class _InitScreenState extends State<InitScreen> {
         print('⏰ [InitScreen] Token đã hết hạn → Thử refresh token');
         if (mounted) {
           await _handleRefreshToken();
+        }
+      }
+      if (isActive == '0') {
+        print('🎉 [InitScreen] Người dùng chưa xác thực → Login');
+        if (mounted) {
+          _navigateToLogin();
         }
       } else {
         print('🎉 [InitScreen] Token còn hạn → Chuyển thẳng vào Main');

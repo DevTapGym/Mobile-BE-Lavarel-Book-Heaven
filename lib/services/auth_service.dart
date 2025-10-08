@@ -1,4 +1,3 @@
-// services/auth_service.dart
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -79,14 +78,7 @@ class AuthService {
 
       if (response.statusCode == 201) {
         final data = response.data['data'];
-
-        await _secureStorage.write(key: 'user_data', value: data.toString());
-
         final isActive = data['is_active'] ?? false;
-        await _secureStorage.write(
-          key: 'is_active',
-          value: isActive.toString(),
-        );
 
         return {
           'success': true,
@@ -116,13 +108,13 @@ class AuthService {
       if (response.statusCode == 200 && response.data['data'] != null) {
         final data = response.data['data'];
 
-        // 1️⃣ Lưu access token
+        // Lưu access token
         await _secureStorage.write(
           key: 'access_token',
           value: data['access_token'],
         );
 
-        // 2️⃣ Lấy refresh token từ header (Set-Cookie)
+        // Lấy refresh token từ header (Set-Cookie)
         final setCookieHeader = response.headers['set-cookie'];
 
         if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
@@ -141,8 +133,22 @@ class AuthService {
           }
         }
 
-        // 3️⃣ Lưu trạng thái user
+        // Lưu trạng thái user
         final userData = data['user'] ?? data['account'] ?? {};
+        final isActiveValue = userData['is_active'] ?? 0;
+
+        // Lưu is_active từ user object
+        await _secureStorage.write(
+          key: 'is_active',
+          value: isActiveValue.toString(),
+        );
+
+        // Check xem đã lưu thành công chưa
+        final savedIsActive = await _secureStorage.read(key: 'is_active');
+        print(
+          '🔍 [Login Check] Is Active đã lưu: ${savedIsActive != null ? "✅ Có ($savedIsActive)" : "❌ Không"}',
+        );
+
         final isActive = userData['is_active'] == 1;
 
         return {
@@ -241,7 +247,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> sendActivationCode() async {
     try {
-      final response = await _privateDio.post('/activate/send-code');
+      final response = await _privateDio.post('/send-code');
 
       if (response.statusCode == 200) {
         return {
@@ -267,12 +273,16 @@ class AuthService {
   Future<Map<String, dynamic>> verifyActivationCode(String code) async {
     try {
       final response = await _privateDio.post(
-        '/activate/verify-code',
+        '/verify-code',
         data: {'code': code},
       );
 
       if (response.statusCode == 200) {
-        await _secureStorage.write(key: 'is_active', value: 'true');
+        await _secureStorage.write(
+          key: 'is_active',
+          value: response.data['is_active'],
+        );
+
         return {
           'success': true,
           'message': response.data['message'] ?? 'Kích hoạt thành công',
