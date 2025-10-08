@@ -1,6 +1,5 @@
 import '../../widgets/review_section_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:heaven_book_app/widgets/book_section_widget.dart';
 import '../../themes/app_colors.dart';
 import 'dart:async';
 
@@ -232,14 +231,6 @@ class _DetailScreenState extends State<DetailScreen>
                 Container(height: 12, color: Colors.grey[100]),
 
                 // Related books
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(20),
-                  child: BookSectionWidget(
-                    title: 'You Might Also Like',
-                    books: relatedBooks,
-                  ),
-                ),
 
                 // Bottom spacing
                 const SizedBox(height: 24), // Space for bottom buttons

@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_event.dart';
+import 'package:heaven_book_app/bloc/book/book_state.dart';
+import 'package:heaven_book_app/bloc/category/category_bloc.dart';
+import 'package:heaven_book_app/bloc/category/category_event.dart';
+import 'package:heaven_book_app/bloc/category/category_state.dart';
+import 'package:heaven_book_app/model/book.dart';
+import 'package:heaven_book_app/model/category.dart';
+import 'package:heaven_book_app/services/category_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 import '../../widgets/book_section_widget.dart';
+import 'result_screen.dart';
 import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
@@ -15,83 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController();
   Timer? _timer;
   int _currentPage = 0;
-
-  // Sample data for book sections
-  final List<Map<String, dynamic>> booksILoveData = [
-    {
-      'title': 'The Great Gatsby',
-      'author': 'F. Scott Fitzgerald',
-      'price': '\$12.99',
-      'rating': 4.5,
-      'isFavorite': true,
-    },
-    {
-      'title': 'To Kill a Mockingbird',
-      'author': 'Harper Lee',
-      'price': '\$10.99',
-      'rating': 4.8,
-      'isFavorite': false,
-    },
-    {
-      'title': 'Pride and Prejudice',
-      'author': 'Jane Austen',
-      'price': '\$9.99',
-      'rating': 4.6,
-      'isFavorite': true,
-    },
-    {
-      'title': 'The Catcher in the Rye',
-      'author': 'J.D. Salinger',
-      'price': '\$11.99',
-      'rating': 4.3,
-      'isFavorite': false,
-    },
-    {
-      'title': 'Lord of the Flies',
-      'author': 'William Golding',
-      'price': '\$8.99',
-      'rating': 4.2,
-      'isFavorite': true,
-    },
-  ];
-
-  final List<Map<String, dynamic>> popularBooksData = [
-    {
-      'title': '1984',
-      'author': 'George Orwell',
-      'price': '\$15.99',
-      'rating': 4.8,
-      'isFavorite': false,
-    },
-    {
-      'title': 'Brave New World',
-      'author': 'Aldous Huxley',
-      'price': '\$13.99',
-      'rating': 4.5,
-      'isFavorite': true,
-    },
-    {
-      'title': 'Fahrenheit 451',
-      'author': 'Ray Bradbury',
-      'price': '\$12.99',
-      'rating': 4.7,
-      'isFavorite': false,
-    },
-    {
-      'title': 'The Handmaid\'s Tale',
-      'author': 'Margaret Atwood',
-      'price': '\$14.99',
-      'rating': 4.6,
-      'isFavorite': true,
-    },
-    {
-      'title': 'Animal Farm',
-      'author': 'George Orwell',
-      'price': '\$9.99',
-      'rating': 4.4,
-      'isFavorite': false,
-    },
-  ];
+  final _categoryBloc = CategoryBloc(CategoryService());
 
   @override
   void initState() {
@@ -109,6 +45,21 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeInOut,
       );
     });
+
+    // Load popular books
+    context.read<BookBloc>().add(LoadBooks());
+
+    // Load categories using the shared _categoryBloc
+    _categoryBloc.add(LoadCategories());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _bannerController.dispose();
+    _timer?.cancel();
+    _categoryBloc.close();
+    super.dispose();
   }
 
   String _getGreeting() {
@@ -127,104 +78,129 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section
-            _buildHeader(),
+    return BlocProvider.value(
+      value: _categoryBloc,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Section
+              _buildHeader(),
 
-            Container(
-              color: AppColors.background,
-              child: Column(
-                children: [
-                  const SizedBox(height: 24),
-                  // Banner Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildBanner(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Categories Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildCategoriesSection(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Bestsellers This Month Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildBestsellersSection(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Recommended Books Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildRecommendedBooksSection(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Books I Love Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: BookSectionWidget(
-                      title: 'Books I Love',
-                      books: booksILoveData,
-                      onViewAll: () {
-                        // Navigate to Books I Love page
-                      },
-                      onBookTap: (book) {
-                        // Navigate to book detail
-                        Navigator.pushNamed(
-                          context,
-                          '/detail',
-                          arguments: book,
-                        );
-                      },
-                      onFavoriteTap: (book) {
-                        // Handle favorite toggle
-                        setState(() {
-                          book['isFavorite'] = !(book['isFavorite'] ?? false);
-                        });
-                      },
+              Container(
+                color: AppColors.background,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    // Banner Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildBanner(),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Popular Books Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: BookSectionWidget(
-                      title: 'Popular Books',
-                      books: popularBooksData,
-                      onViewAll: () {
-                        // Navigate to Popular Books page
-                      },
-                      onBookTap: (book) {
-                        // Navigate to book detail
-                        Navigator.pushNamed(
-                          context,
-                          '/detail',
-                          arguments: book,
-                        );
-                      },
-                      onFavoriteTap: (book) {
-                        // Handle favorite toggle
-                        setState(() {
-                          book['isFavorite'] = !(book['isFavorite'] ?? false);
-                        });
-                      },
+                    // Categories Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildCategoriesSection(),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+
+                    // Bestsellers This Year Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: BlocBuilder<BookBloc, BookState>(
+                        builder: (context, state) {
+                          if (state is BookLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          } else if (state is BookLoaded) {
+                            return _buildBestsellersSection(
+                              state.bestSellingBooks,
+                            );
+                          } else if (state is BookError) {
+                            return Text('Lỗi: ${state.message}');
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Recommended Books Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildRecommendedBooksSection(),
+                    ),
+                    const SizedBox(height: 24),
+                    // Books on Sale Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: BlocBuilder<BookBloc, BookState>(
+                        builder: (context, state) {
+                          if (state is BookLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          } else if (state is BookLoaded) {
+                            return BookSectionWidget(
+                              title: 'Books on Sale',
+                              books: state.saleOffBooks,
+                              onViewAll: () {},
+                              onBookTap: (book) {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/detail',
+                                  arguments: book,
+                                );
+                              },
+                            );
+                          } else if (state is BookError) {
+                            return Text('Lỗi: ${state.message}');
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Popular Books Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: BlocBuilder<BookBloc, BookState>(
+                        builder: (context, state) {
+                          if (state is BookLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          } else if (state is BookLoaded) {
+                            return BookSectionWidget(
+                              title: 'Popular Books',
+                              books: state.popularBooks,
+                              onViewAll: () {},
+                              onBookTap: (book) {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/detail',
+                                  arguments: book,
+                                );
+                              },
+                            );
+                          } else if (state is BookError) {
+                            return Text('Lỗi: ${state.message}');
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -342,7 +318,22 @@ class _HomeScreenState extends State<HomeScreen> {
           suffixIcon: IconButton(
             icon: const Icon(Icons.search, color: AppColors.primaryDark),
             onPressed: () {
-              Navigator.pushNamed(context, '/result');
+              final query = _searchController.text.trim();
+              if (query.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => BlocProvider.value(
+                          value: _categoryBloc,
+                          child: const ResultScreen(),
+                        ),
+                    settings: RouteSettings(
+                      arguments: {'type': 'search', 'query': query},
+                    ),
+                  ),
+                );
+              }
             },
           ),
           border: OutlineInputBorder(
@@ -361,200 +352,314 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBanner() {
-    final List<Map<String, dynamic>> banners = [
-      {
-        'title': 'Discover New Books',
-        'subtitle': 'Find your next favorite book',
-        'icon': Icons.book,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.indigoAccent, Colors.indigo],
-        ),
-      },
-      {
-        'title': 'Best Sellers 2025',
-        'subtitle': 'Explore top-rated books',
-        'icon': Icons.star,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.purple, Colors.deepPurple],
-        ),
-      },
-      {
-        'title': 'New Arrivals',
-        'subtitle': 'Fresh books just for you',
-        'icon': Icons.new_releases,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.fromARGB(255, 25, 188, 31),
-            Color.fromARGB(255, 0, 150, 45),
-          ],
-        ),
-      },
-      {
-        'title': 'Exclusive Offers',
-        'subtitle': 'Get special discounts',
-        'icon': Icons.local_offer,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.orange, Colors.deepOrange],
-        ),
-      },
-    ];
+    return BlocBuilder<BookBloc, BookState>(
+      builder: (context, state) {
+        List<Book> bannerBooks = [];
 
-    return SizedBox(
-      height: 210,
-      child: Stack(
-        children: [
-          PageView.builder(
-            controller: _bannerController,
-            itemCount: banners.length,
-            onPageChanged: (int page) {
-              setState(() {
-                _currentPage = page;
-              });
+        if (state is BookLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is BookLoaded) {
+          try {
+            bannerBooks = state.bannerBooks.take(4).toList();
+          } catch (e) {
+            bannerBooks = state.popularBooks.take(4).toList();
+          }
+
+          final List<Map<String, dynamic>> banners = [
+            {
+              'title': 'New Books',
+              'subtitle': 'Find your next favorite book',
+              'icon': Icons.book,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.indigoAccent, Colors.indigo],
+              ),
+              'color': Colors.indigo,
+              'books':
+                  bannerBooks.isNotEmpty
+                      ? 'http://10.0.2.2:8000${bannerBooks[0].thumbnail}'
+                      : null,
             },
-            itemBuilder: (context, index) {
-              final banner = banners[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  gradient: banner['gradient'] as LinearGradient,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -20,
-                      top: -20,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
+            {
+              'title': 'Best Sellers 2025',
+              'subtitle': 'Explore top-rated books',
+              'icon': Icons.star,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.purple, Colors.deepPurple],
+              ),
+              'color': Colors.deepPurple,
+              'books':
+                  bannerBooks.length > 1
+                      ? 'http://10.0.2.2:8000${bannerBooks[1].thumbnail}'
+                      : null,
+            },
+            {
+              'title': 'New Arrivals',
+              'subtitle': 'Fresh books just for you',
+              'icon': Icons.new_releases,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 25, 188, 31),
+                  Color.fromARGB(255, 0, 150, 45),
+                ],
+              ),
+              'color': Color.fromARGB(255, 0, 150, 45),
+              'books':
+                  bannerBooks.length > 2
+                      ? 'http://10.0.2.2:8000${bannerBooks[2].thumbnail}'
+                      : null,
+            },
+            {
+              'title': 'Exclusive Offers',
+              'subtitle': 'Get special discounts',
+              'icon': Icons.local_offer,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.orange, Colors.deepOrange],
+              ),
+              'color': Colors.deepOrange,
+              'books':
+                  bannerBooks.length > 3
+                      ? 'http://10.0.2.2:8000${bannerBooks[3].thumbnail}'
+                      : null,
+            },
+          ];
+
+          return SizedBox(
+            height: 210,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _bannerController,
+                  itemCount: banners.length,
+                  onPageChanged: (int page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final banner = banners[index];
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        gradient: banner['gradient'] as LinearGradient,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    Positioned(
-                      right: 40,
-                      bottom: -30,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Stack(
                         children: [
-                          Icon(
-                            banner['icon'] as IconData,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            banner['title'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            banner['subtitle'] as String,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Navigate to relevant section
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppColors.primaryDark,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          Positioned(
+                            right: -20,
+                            top: -20,
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              elevation: 0,
                             ),
-                            child: const Text(
-                              'Explore Now',
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Positioned(
+                            right: 40,
+                            bottom: -30,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      banner['icon'] as IconData,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      banner['title'] as String,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      banner['subtitle'] as String,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        // Navigate to relevant section
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: banner['color'],
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 10,
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text(
+                                        'Explore Now',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                // Hình ảnh
+                                Container(
+                                  width: 112,
+                                  height: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child:
+                                        bannerBooks.length > index &&
+                                                bannerBooks[index]
+                                                    .thumbnail
+                                                    .isNotEmpty
+                                            ? Image.network(
+                                              banner['books']
+                                                  as String, // URL đã được tạo sẵn
+                                              width: 112,
+                                              height: double.infinity,
+                                              fit: BoxFit.cover,
+                                              loadingBuilder: (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.8,
+                                                            ),
+                                                      ),
+                                                );
+                                              },
+                                              errorBuilder: (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                              ) {
+                                                return Center(
+                                                  child: Icon(
+                                                    banner['icon'] as IconData,
+                                                    size: 80,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.8),
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                            : Center(
+                                              child: Icon(
+                                                banner['icon'] as IconData,
+                                                size: 80,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.8,
+                                                ),
+                                              ),
+                                            ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          // Dots indicator
-          Positioned(
-            bottom: 10,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                banners.length,
-                (index) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _currentPage == index ? 12 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color:
-                        _currentPage == index
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
+                // Dots indicator
+                Positioned(
+                  bottom: 10,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      banners.length,
+                      (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentPage == index ? 12 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color:
+                              _currentPage == index
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
+          );
+        } else if (state is BookError) {
+          return Text('Lỗi: ${state.message}');
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   Widget _buildCategoriesSection() {
-    final categories = [
-      {'name': 'Fiction', 'icon': Icons.auto_stories, 'color': Colors.purple},
-      {'name': 'Science', 'icon': Icons.science, 'color': Colors.blue},
-      {'name': 'History', 'icon': Icons.history_edu, 'color': Colors.orange},
-      {'name': 'Romance', 'icon': Icons.favorite, 'color': Colors.pink},
-      {'name': 'Mystery', 'icon': Icons.search, 'color': Colors.green},
-      {'name': 'Fantasy', 'icon': Icons.castle, 'color': Colors.indigo},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return BlocBuilder<CategoryBloc, CategoryState>(
+      builder: (context, state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Categories',
@@ -564,65 +669,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppColors.text,
               ),
             ),
-            TextButton(
-              onPressed: () {
-                // Navigate to categories
-              },
-              child: const Text(
-                'View All',
-                style: TextStyle(
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            const SizedBox(height: 12),
+            SizedBox(height: 100, child: _buildCategoriesList(state)),
           ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              return Container(
-                width: 80,
-                margin: const EdgeInsets.only(right: 12),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: (category['color'] as Color).withValues(
-                          alpha: 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        category['icon'] as IconData,
-                        color: category['color'] as Color,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      category['name'] as String,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.text,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -963,49 +1014,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBestsellersSection() {
-    final List<Map<String, dynamic>> bestsellers = [
-      {
-        'rank': 1,
-        'title': 'Fourth Wing',
-        'author': 'Rebecca Yarros',
-        'price': 19.99,
-        'originalPrice': 24.99,
-        'rating': 4.9,
-        'reviewCount': 15420,
-        'category': 'Fantasy Romance',
-        'salesCount': '2.1M',
-        'isNew': true,
-        'color': Colors.deepPurple,
-      },
-      {
-        'rank': 2,
-        'title': 'It Ends with Us',
-        'author': 'Colleen Hoover',
-        'price': 16.99,
-        'originalPrice': 19.99,
-        'rating': 4.8,
-        'reviewCount': 28750,
-        'category': 'Contemporary',
-        'salesCount': '1.8M',
-        'isNew': false,
-        'color': Colors.pink,
-      },
-      {
-        'rank': 3,
-        'title': 'Tomorrow, and Tomorrow',
-        'author': 'Gabrielle Zevin',
-        'price': 18.99,
-        'originalPrice': 22.99,
-        'rating': 4.7,
-        'reviewCount': 12300,
-        'category': 'Literary Fiction',
-        'salesCount': '1.5M',
-        'isNew': false,
-        'color': Colors.orange,
-      },
-    ];
-
+  Widget _buildBestsellersSection(List<Book> bestSellingBooks) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1050,7 +1059,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Bestsellers This Month',
+                        'Bestsellers This Year',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -1065,7 +1074,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Text(
-                        'Top selling books in August',
+                        'Top selling books in 2025',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.9),
@@ -1107,15 +1116,30 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 20),
 
         // Bestsellers List
-        ...bestsellers.asMap().entries.map((entry) {
+        ...bestSellingBooks.asMap().entries.map((entry) {
+          final index = entry.key;
           final book = entry.value;
-          return _buildBestsellerCard(book);
+          return _buildBestsellerCard(book, index + 1); // rank = index + 1
         }),
       ],
     );
   }
 
-  Widget _buildBestsellerCard(Map<String, dynamic> book) {
+  Widget _buildBestsellerCard(Book book, int rank) {
+    // Định nghĩa màu cho từng rank
+    Color getColorForRank(int rank) {
+      switch (rank) {
+        case 1:
+          return Colors.deepPurple;
+        case 2:
+          return Colors.pink;
+        case 3:
+          return Colors.orange;
+        default:
+          return AppColors.primaryDark;
+      }
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(context, '/detail', arguments: book);
@@ -1126,16 +1150,16 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: book['rank'] == 1 ? Colors.amber : Colors.grey.shade200,
-            width: book['rank'] == 1 ? 2 : 1,
+            color: rank == 1 ? Colors.amber : Colors.grey.shade200,
+            width: rank == 1 ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color:
-                  book['rank'] == 1
+                  rank == 1
                       ? Colors.amber.withValues(alpha: 0.15)
                       : Colors.black.withValues(alpha: 0.08),
-              blurRadius: book['rank'] == 1 ? 15 : 10,
+              blurRadius: rank == 1 ? 15 : 10,
               offset: const Offset(0, 3),
             ),
           ],
@@ -1152,22 +1176,101 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 80,
                     height: 120,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          (book['color'] as Color).withValues(alpha: 0.3),
-                          (book['color'] as Color).withValues(alpha: 0.1),
-                        ],
-                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.menu_book,
-                        size: 40,
-                        color: book['color'] as Color,
-                      ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child:
+                          book.thumbnail.isNotEmpty
+                              ? Image.network(
+                                'http://10.0.2.2:8000${book.thumbnail}',
+                                width: 80,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (
+                                  context,
+                                  child,
+                                  loadingProgress,
+                                ) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: 80,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          getColorForRank(
+                                            rank,
+                                          ).withValues(alpha: 0.3),
+                                          getColorForRank(
+                                            rank,
+                                          ).withValues(alpha: 0.1),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 80,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          getColorForRank(
+                                            rank,
+                                          ).withValues(alpha: 0.3),
+                                          getColorForRank(
+                                            rank,
+                                          ).withValues(alpha: 0.1),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.menu_book,
+                                        size: 40,
+                                        color: getColorForRank(rank),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                              : Container(
+                                width: 80,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      getColorForRank(
+                                        rank,
+                                      ).withValues(alpha: 0.3),
+                                      getColorForRank(
+                                        rank,
+                                      ).withValues(alpha: 0.1),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.menu_book,
+                                    size: 40,
+                                    color: getColorForRank(rank),
+                                  ),
+                                ),
+                              ),
                     ),
                   ),
 
@@ -1180,29 +1283,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Row(
                           children: [
-                            if (book['isNew'])
+                            // Badge "HOT" cho top 3
+                            if (rank <= 3)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.green,
+                                  color: rank == 1 ? Colors.red : Colors.orange,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Text(
-                                  'NEW',
-                                  style: TextStyle(
+                                child: Text(
+                                  rank == 1 ? 'HOT' : 'TOP $rank',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            if (book['isNew']) const SizedBox(width: 8),
+                            if (rank <= 3) const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                book['title'],
+                                book.title,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1216,7 +1320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${book['author']} • ${book['category']}',
+                          book.author,
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[600],
@@ -1234,7 +1338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${book['rating']} (${_formatNumber(book['reviewCount'])})',
+                              '5.0 (${book.sold} sold)', // Sử dụng book.sold thay vì reviewCount
                               style: const TextStyle(fontSize: 12),
                             ),
                             const SizedBox(width: 20),
@@ -1257,7 +1361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
-                                    '${book['salesCount']} sold',
+                                    'Best Seller',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.red.shade600,
@@ -1276,14 +1380,35 @@ class _HomeScreenState extends State<HomeScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  '\$${book['price'].toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryDark,
+                                // Hiển thị giá với logic sale off
+                                if (book.saleOff > 0) ...[
+                                  Text(
+                                    FormatPrice.formatPrice(book.price),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
                                   ),
-                                ),
+                                  Text(
+                                    FormatPrice.formatPrice(
+                                      book.price * (1 - book.saleOff / 100),
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ] else
+                                  Text(
+                                    FormatPrice.formatPrice(book.price),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
                               ],
                             ),
                             GestureDetector(
@@ -1292,7 +1417,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      '${book['title']} added to cart!',
+                                      '${book.title} added to cart!',
                                     ),
                                     backgroundColor: AppColors.primary,
                                   ),
@@ -1342,9 +1467,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors:
-                        book['rank'] == 1
+                        rank == 1
                             ? [Colors.amber.shade400, Colors.orange.shade600]
-                            : book['rank'] == 2
+                            : rank == 2
                             ? [Colors.grey.shade300, Colors.grey.shade500]
                             : [
                               Colors.orange.shade300,
@@ -1362,7 +1487,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    '#${book['rank']}',
+                    '#$rank',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -1378,18 +1503,98 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _formatNumber(int number) {
-    if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}k';
+  Widget _buildCategoriesList(CategoryState state) {
+    if (state is CategoryLoading) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (state is CategoryLoaded) {
+      return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: state.categories.length,
+        itemBuilder: (context, index) {
+          final category = state.categories[index];
+          return _buildCategoryItem(category, index);
+        },
+      );
+    } else if (state is CategoryError) {
+      return Center(
+        child: Text(
+          'Lỗi: ${state.message}',
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
     }
-    return number.toString();
+    return const SizedBox.shrink();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _bannerController.dispose();
-    _timer?.cancel();
-    super.dispose();
+  Widget _buildCategoryItem(Category category, int index) {
+    final List<IconData> categoryIcons = [
+      Icons.auto_stories,
+      Icons.science,
+      Icons.history_edu,
+      Icons.psychology,
+      Icons.architecture_sharp,
+      Icons.business_center,
+      Icons.child_care_outlined,
+      Icons.sports_esports,
+      Icons.restaurant_menu,
+      Icons.travel_explore,
+    ];
+
+    // Lấy icon theo index, nếu vượt quá thì lặp lại
+    final icon = categoryIcons[index % categoryIcons.length];
+
+    return Container(
+      width: 80,
+      margin: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => BlocProvider.value(
+                    value: _categoryBloc,
+                    child: const ResultScreen(),
+                  ),
+              settings: RouteSettings(
+                arguments: {'type': 'filter', 'query': category.id},
+              ),
+            ),
+          );
+        },
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(2, 2),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: AppColors.primaryDark, size: 28),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              category.name,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.text,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

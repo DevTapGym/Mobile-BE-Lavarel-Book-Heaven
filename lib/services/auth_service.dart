@@ -1,5 +1,5 @@
-// services/auth_service.dart
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -79,14 +79,7 @@ class AuthService {
 
       if (response.statusCode == 201) {
         final data = response.data['data'];
-
-        await _secureStorage.write(key: 'user_data', value: data.toString());
-
         final isActive = data['is_active'] ?? false;
-        await _secureStorage.write(
-          key: 'is_active',
-          value: isActive.toString(),
-        );
 
         return {
           'success': true,
@@ -116,13 +109,13 @@ class AuthService {
       if (response.statusCode == 200 && response.data['data'] != null) {
         final data = response.data['data'];
 
-        // 1️⃣ Lưu access token
+        // Lưu access token
         await _secureStorage.write(
           key: 'access_token',
           value: data['access_token'],
         );
 
-        // 2️⃣ Lấy refresh token từ header (Set-Cookie)
+        // Lấy refresh token từ header (Set-Cookie)
         final setCookieHeader = response.headers['set-cookie'];
 
         if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
@@ -135,14 +128,28 @@ class AuthService {
           if (cookies.isNotEmpty) {
             final uri = Uri.parse(_publicDio.options.baseUrl);
             await _cookieJar.saveFromResponse(uri, cookies);
-            print('✅ Refresh token đã được lưu thành công');
+            debugPrint('✅ Refresh token đã được lưu thành công');
           } else {
             throw Exception('Không tìm thấy refresh_token trong header');
           }
         }
 
-        // 3️⃣ Lưu trạng thái user
+        // Lưu trạng thái user
         final userData = data['user'] ?? data['account'] ?? {};
+        final isActiveValue = userData['is_active'] ?? 0;
+
+        // Lưu is_active từ user object
+        await _secureStorage.write(
+          key: 'is_active',
+          value: isActiveValue.toString(),
+        );
+
+        // Check xem đã lưu thành công chưa
+        final savedIsActive = await _secureStorage.read(key: 'is_active');
+        debugPrint(
+          '🔍 [Login Check] Is Active đã lưu: ${savedIsActive != null ? "✅ Có ($savedIsActive)" : "❌ Không"}',
+        );
+
         final isActive = userData['is_active'] == 1;
 
         return {
@@ -209,7 +216,7 @@ class AuthService {
 
           if (cookies.isNotEmpty) {
             await _cookieJar.saveFromResponse(uri, cookies);
-            print('✅ Refresh token mới đã được lưu thành công');
+            debugPrint('✅ Refresh token mới đã được lưu thành công');
           } else {
             throw Exception('Server không trả về refresh token mới');
           }
@@ -241,7 +248,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> sendActivationCode() async {
     try {
-      final response = await _privateDio.post('/activate/send-code');
+      final response = await _privateDio.post('/send-code');
 
       if (response.statusCode == 200) {
         return {
@@ -267,12 +274,16 @@ class AuthService {
   Future<Map<String, dynamic>> verifyActivationCode(String code) async {
     try {
       final response = await _privateDio.post(
-        '/activate/verify-code',
+        '/verify-code',
         data: {'code': code},
       );
 
       if (response.statusCode == 200) {
-        await _secureStorage.write(key: 'is_active', value: 'true');
+        await _secureStorage.write(
+          key: 'is_active',
+          value: response.data['is_active'],
+        );
+
         return {
           'success': true,
           'message': response.data['message'] ?? 'Kích hoạt thành công',
@@ -293,8 +304,8 @@ class AuthService {
 
   Future<void> _handleTokenExpired() async {
     await _secureStorage.deleteAll();
-    // ignore: avoid_print
-    print('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    // ignore: avoid_debugPrint
+    debugPrint('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   }
 
   Future<Map<String, dynamic>> logout() async {
@@ -339,7 +350,7 @@ class AuthService {
     final uri = Uri.parse(_publicDio.options.baseUrl);
     await _cookieJar.delete(uri, true);
 
-    print(
+    debugPrint(
       '🧹 [AuthService] Hoàn tất cleanup: access token + refresh token + user data',
     );
   }

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../themes/app_colors.dart';
+import 'package:heaven_book_app/model/book.dart';
+import 'package:heaven_book_app/themes/app_colors.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 
 class BookSectionWidget extends StatelessWidget {
   final String title;
-  final List<Map<String, dynamic>> books;
+  final List<Book> books;
   final VoidCallback? onViewAll;
-  final Function(Map<String, dynamic>)? onBookTap;
-  final Function(Map<String, dynamic>)? onFavoriteTap;
+  final Function(Book)? onBookTap;
 
   const BookSectionWidget({
     super.key,
@@ -14,7 +15,6 @@ class BookSectionWidget extends StatelessWidget {
     required this.books,
     this.onViewAll,
     this.onBookTap,
-    this.onFavoriteTap,
   });
 
   @override
@@ -22,6 +22,7 @@ class BookSectionWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // --- Tiêu đề ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -47,6 +48,8 @@ class BookSectionWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+
+        // --- Danh sách sách ---
         SizedBox(
           height: 300,
           child: ListView.builder(
@@ -55,16 +58,13 @@ class BookSectionWidget extends StatelessWidget {
             itemBuilder: (context, index) {
               final book = books[index];
               return BookCard(
-                title: book['title'] ?? '',
-                author: book['author'] ?? '',
-                price:
-                    book['price'] is String
-                        ? book['price']
-                        : '\$${book['price']?.toStringAsFixed(2) ?? '0.00'}',
-                rating: (book['rating'] ?? 0.0).toDouble(),
-                isFavorite: book['isFavorite'] ?? false,
+                title: book.title,
+                author: book.author,
+                price: book.price,
+                saleOff: book.saleOff,
+                rating: 5.0,
+                thumbnail: book.thumbnail,
                 onTap: () => onBookTap?.call(book),
-                onFavoriteTap: () => onFavoriteTap?.call(book),
               );
             },
           ),
@@ -77,21 +77,21 @@ class BookSectionWidget extends StatelessWidget {
 class BookCard extends StatelessWidget {
   final String title;
   final String author;
-  final String price;
+  final double price;
+  final double saleOff;
   final double rating;
-  final bool isFavorite;
+  final String? thumbnail;
   final VoidCallback? onTap;
-  final VoidCallback? onFavoriteTap;
 
   const BookCard({
     super.key,
     required this.title,
     required this.author,
     required this.price,
+    required this.saleOff,
     required this.rating,
-    required this.isFavorite,
+    this.thumbnail,
     this.onTap,
-    this.onFavoriteTap,
   });
 
   @override
@@ -99,7 +99,7 @@ class BookCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 160,
+        width: 180,
         height: 240,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
@@ -116,53 +116,55 @@ class BookCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                Container(
-                  height: 180,
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.book,
-                      size: 60,
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
+            // --- Ảnh bìa ---
+            Container(
+              height: 170,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child:
+                    thumbnail != null && thumbnail!.isNotEmpty
+                        ? Image.network(
+                          'http://10.0.2.2:8000$thumbnail',
+                          width: double.infinity,
+                          height: 170,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.book,
+                                size: 60,
+                                color: AppColors.primaryDark,
+                              ),
+                            );
+                          },
+                        )
+                        : const Center(
+                          child: Icon(
+                            Icons.book,
+                            size: 60,
+                            color: AppColors.primaryDark,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.grey,
-                        size: 20,
-                      ),
-                      onPressed: onFavoriteTap,
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
+
+            // --- Thông tin sách ---
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -190,31 +192,88 @@ class BookCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          price,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
+                        // Hiển thị giá tiền với logic giảm giá
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (saleOff > 0) ...[
+                                // Hiển thị giá gốc bị gạch ngang
+                                Text(
+                                  FormatPrice.formatPrice(price),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Hiển thị giá sau giảm
+                                Row(
+                                  children: [
+                                    Text(
+                                      FormatPrice.formatPrice(
+                                        price * (1 - saleOff / 100),
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.discountRed,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '-${saleOff.toStringAsFixed(0)}%',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ] else
+                                // Hiển thị giá bình thường khi không có giảm giá
+                                Text(
+                                  FormatPrice.formatPrice(price),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              rating.toString(),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.text,
+                        // Chỉ hiển thị rating khi không có giảm giá
+                        if (saleOff <= 0)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 16,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 2),
+                              Text(
+                                rating.toString(),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.text,
+                                ),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ],

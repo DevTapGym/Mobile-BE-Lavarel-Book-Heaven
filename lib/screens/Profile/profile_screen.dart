@@ -105,7 +105,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (result['success'] == true) {
-        print('🏠 [ProfileScreen] Đăng xuất thành công → Chuyển về InitScreen');
+        debugPrint(
+          '🏠 [ProfileScreen] Đăng xuất thành công → Chuyển về InitScreen',
+        );
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
@@ -130,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      print('🚨 [ProfileScreen] Lỗi khi đăng xuất: $e');
+      debugPrint('🚨 [ProfileScreen] Lỗi khi đăng xuất: $e');
 
       // Đóng loading dialog nếu có lỗi
       if (mounted) {
