@@ -578,12 +578,42 @@ class _ResultScreenState extends State<ResultScreen> {
                     top: Radius.circular(16),
                   ),
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.book,
-                    size: 50,
-                    color: AppColors.primaryDark,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
                   ),
+                  child:
+                      book.thumbnail.isNotEmpty
+                          ? Image.network(
+                            'http://10.0.2.2:8000${book.thumbnail}',
+                            width: double.infinity,
+                            height: 160,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.book,
+                                  size: 60,
+                                  color: AppColors.primaryDark,
+                                ),
+                              );
+                            },
+                          )
+                          : const Center(
+                            child: Icon(
+                              Icons.book,
+                              size: 60,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
                 ),
               ),
               // Discount Badge
@@ -745,13 +775,48 @@ class _ResultScreenState extends State<ResultScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.card,
                   borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.book,
-                    size: 40,
-                    color: AppColors.primaryDark,
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child:
+                      book.thumbnail.isNotEmpty
+                          ? Image.network(
+                            'http://10.0.2.2:8000${book.thumbnail}',
+                            width: 100,
+                            height: 160,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.book,
+                                  size: 40,
+                                  color: AppColors.primaryDark,
+                                ),
+                              );
+                            },
+                          )
+                          : const Center(
+                            child: Icon(
+                              Icons.book,
+                              size: 40,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
                 ),
               ),
               if (book.saleOff > 0)

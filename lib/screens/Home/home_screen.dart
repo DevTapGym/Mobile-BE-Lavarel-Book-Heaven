@@ -352,182 +352,306 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBanner() {
-    final List<Map<String, dynamic>> banners = [
-      {
-        'title': 'Discover New Books',
-        'subtitle': 'Find your next favorite book',
-        'icon': Icons.book,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.indigoAccent, Colors.indigo],
-        ),
-      },
-      {
-        'title': 'Best Sellers 2025',
-        'subtitle': 'Explore top-rated books',
-        'icon': Icons.star,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.purple, Colors.deepPurple],
-        ),
-      },
-      {
-        'title': 'New Arrivals',
-        'subtitle': 'Fresh books just for you',
-        'icon': Icons.new_releases,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.fromARGB(255, 25, 188, 31),
-            Color.fromARGB(255, 0, 150, 45),
-          ],
-        ),
-      },
-      {
-        'title': 'Exclusive Offers',
-        'subtitle': 'Get special discounts',
-        'icon': Icons.local_offer,
-        'gradient': const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.orange, Colors.deepOrange],
-        ),
-      },
-    ];
+    return BlocBuilder<BookBloc, BookState>(
+      builder: (context, state) {
+        List<Book> bannerBooks = [];
 
-    return SizedBox(
-      height: 210,
-      child: Stack(
-        children: [
-          PageView.builder(
-            controller: _bannerController,
-            itemCount: banners.length,
-            onPageChanged: (int page) {
-              setState(() {
-                _currentPage = page;
-              });
+        if (state is BookLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is BookLoaded) {
+          try {
+            bannerBooks = state.bannerBooks.take(4).toList();
+          } catch (e) {
+            bannerBooks = state.popularBooks.take(4).toList();
+          }
+
+          final List<Map<String, dynamic>> banners = [
+            {
+              'title': 'New Books',
+              'subtitle': 'Find your next favorite book',
+              'icon': Icons.book,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.indigoAccent, Colors.indigo],
+              ),
+              'color': Colors.indigo,
+              'books':
+                  bannerBooks.isNotEmpty
+                      ? 'http://10.0.2.2:8000${bannerBooks[0].thumbnail}'
+                      : null,
             },
-            itemBuilder: (context, index) {
-              final banner = banners[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  gradient: banner['gradient'] as LinearGradient,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -20,
-                      top: -20,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
+            {
+              'title': 'Best Sellers 2025',
+              'subtitle': 'Explore top-rated books',
+              'icon': Icons.star,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.purple, Colors.deepPurple],
+              ),
+              'color': Colors.deepPurple,
+              'books':
+                  bannerBooks.length > 1
+                      ? 'http://10.0.2.2:8000${bannerBooks[1].thumbnail}'
+                      : null,
+            },
+            {
+              'title': 'New Arrivals',
+              'subtitle': 'Fresh books just for you',
+              'icon': Icons.new_releases,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 25, 188, 31),
+                  Color.fromARGB(255, 0, 150, 45),
+                ],
+              ),
+              'color': Color.fromARGB(255, 0, 150, 45),
+              'books':
+                  bannerBooks.length > 2
+                      ? 'http://10.0.2.2:8000${bannerBooks[2].thumbnail}'
+                      : null,
+            },
+            {
+              'title': 'Exclusive Offers',
+              'subtitle': 'Get special discounts',
+              'icon': Icons.local_offer,
+              'gradient': const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.orange, Colors.deepOrange],
+              ),
+              'color': Colors.deepOrange,
+              'books':
+                  bannerBooks.length > 3
+                      ? 'http://10.0.2.2:8000${bannerBooks[3].thumbnail}'
+                      : null,
+            },
+          ];
+
+          return SizedBox(
+            height: 210,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _bannerController,
+                  itemCount: banners.length,
+                  onPageChanged: (int page) {
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final banner = banners[index];
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        gradient: banner['gradient'] as LinearGradient,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    Positioned(
-                      right: 40,
-                      bottom: -30,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Stack(
                         children: [
-                          Icon(
-                            banner['icon'] as IconData,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            banner['title'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            banner['subtitle'] as String,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Navigate to relevant section
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppColors.primaryDark,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          Positioned(
+                            right: -20,
+                            top: -20,
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              elevation: 0,
                             ),
-                            child: const Text(
-                              'Explore Now',
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Positioned(
+                            right: 40,
+                            bottom: -30,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      banner['icon'] as IconData,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      banner['title'] as String,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      banner['subtitle'] as String,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        // Navigate to relevant section
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: banner['color'],
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 10,
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text(
+                                        'Explore Now',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                // Hình ảnh
+                                Container(
+                                  width: 112,
+                                  height: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child:
+                                        bannerBooks.length > index &&
+                                                bannerBooks[index]
+                                                    .thumbnail
+                                                    .isNotEmpty
+                                            ? Image.network(
+                                              banner['books']
+                                                  as String, // URL đã được tạo sẵn
+                                              width: 112,
+                                              height: double.infinity,
+                                              fit: BoxFit.cover,
+                                              loadingBuilder: (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.8,
+                                                            ),
+                                                      ),
+                                                );
+                                              },
+                                              errorBuilder: (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                              ) {
+                                                return Center(
+                                                  child: Icon(
+                                                    banner['icon'] as IconData,
+                                                    size: 80,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.8),
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                            : Center(
+                                              child: Icon(
+                                                banner['icon'] as IconData,
+                                                size: 80,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.8,
+                                                ),
+                                              ),
+                                            ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          // Dots indicator
-          Positioned(
-            bottom: 10,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                banners.length,
-                (index) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _currentPage == index ? 12 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color:
-                        _currentPage == index
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
+                // Dots indicator
+                Positioned(
+                  bottom: 10,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      banners.length,
+                      (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentPage == index ? 12 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color:
+                              _currentPage == index
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
+          );
+        } else if (state is BookError) {
+          return Text('Lỗi: ${state.message}');
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -1171,7 +1295,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  rank == 1 ? 'HOT' : 'TOP ${rank}',
+                                  rank == 1 ? 'HOT' : 'TOP $rank',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
