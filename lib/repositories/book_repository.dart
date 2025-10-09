@@ -34,7 +34,7 @@ class BookRepository {
     }
   }
 
-  Future<Book> getBookById(int id) async {
+  Future<Book> getBookDetail(int id) async {
     try {
       final response = await _publicDio.get('/book/$id');
       if (response.statusCode == 200) {

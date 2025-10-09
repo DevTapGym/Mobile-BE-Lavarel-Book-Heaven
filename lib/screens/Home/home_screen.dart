@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(
                                   context,
                                   '/detail',
-                                  arguments: book,
+                                  arguments: {'bookId': book.id},
                                 );
                               },
                             );
@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(
                                   context,
                                   '/detail',
-                                  arguments: book,
+                                  arguments: {'bookId': book.id},
                                 );
                               },
                             );
@@ -380,6 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.indigoAccent, Colors.indigo],
               ),
               'color': Colors.indigo,
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[0].id : null,
               'books':
                   bannerBooks.isNotEmpty
                       ? 'http://10.0.2.2:8000${bannerBooks[0].thumbnail}'
@@ -395,6 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.purple, Colors.deepPurple],
               ),
               'color': Colors.deepPurple,
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[1].id : null,
               'books':
                   bannerBooks.length > 1
                       ? 'http://10.0.2.2:8000${bannerBooks[1].thumbnail}'
@@ -413,6 +415,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               'color': Color.fromARGB(255, 0, 150, 45),
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[2].id : null,
               'books':
                   bannerBooks.length > 2
                       ? 'http://10.0.2.2:8000${bannerBooks[2].thumbnail}'
@@ -428,6 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.orange, Colors.deepOrange],
               ),
               'color': Colors.deepOrange,
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[3].id : null,
               'books':
                   bannerBooks.length > 3
                       ? 'http://10.0.2.2:8000${bannerBooks[3].thumbnail}'
@@ -516,7 +520,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(height: 12),
                                     ElevatedButton(
                                       onPressed: () {
-                                        // Navigate to relevant section
+                                        if (banner['book_id'] == null) return;
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/detail',
+                                          arguments: {
+                                            'bookId': banner['book_id'],
+                                          },
+                                        );
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
@@ -1146,7 +1157,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/detail', arguments: book);
+        Navigator.pushNamed(context, '/detail', arguments: {'bookId': book.id});
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

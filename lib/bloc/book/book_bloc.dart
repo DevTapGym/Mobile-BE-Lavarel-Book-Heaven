@@ -11,6 +11,7 @@ class BookBloc extends Bloc<BookEvent, BookState> {
     on<LoadSearchBooks>(_onLoadSearchBooks);
     on<LoadCategoryBooks>(_onLoadCategoryBooks);
     on<LoadAllBooks>(_onLoadAllBooks);
+    on<LoadBookDetail>(_onLoadBookDetail);
   }
 
   Future<void> _onLoadBooks(LoadBooks event, Emitter<BookState> emit) async {
@@ -69,6 +70,24 @@ class BookBloc extends Bloc<BookEvent, BookState> {
     try {
       final allBooks = await _repository.getAllBooks();
       emit(BookLoadAll(allBooks));
+    } catch (e) {
+      emit(BookError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadBookDetail(
+    LoadBookDetail event,
+    Emitter<BookState> emit,
+  ) async {
+    emit(BookLoading());
+    try {
+      final bookDetail = await _repository.getBookDetail(event.id);
+      final relatedBooks = await _repository.getBooksByCategory(
+        bookDetail.categories.first.id,
+      );
+      relatedBooks.removeWhere((book) => book.id == bookDetail.id);
+
+      emit(BookDetailLoaded(book: bookDetail, relatedBooks: relatedBooks));
     } catch (e) {
       emit(BookError(e.toString()));
     }

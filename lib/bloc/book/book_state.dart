@@ -19,7 +19,8 @@ class BookLoadAll extends BookState {
 
 class BookDetailLoaded extends BookState {
   final Book book;
-  BookDetailLoaded(this.book);
+  final List<Book> relatedBooks;
+  BookDetailLoaded({required this.book, required this.relatedBooks});
   @override
   List<Object?> get props => [book];
 }

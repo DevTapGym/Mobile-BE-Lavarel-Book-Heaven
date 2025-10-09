@@ -1,3 +1,10 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_event.dart';
+import 'package:heaven_book_app/bloc/book/book_state.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
+import 'package:heaven_book_app/widgets/book_section_widget.dart';
+
 import '../../widgets/review_section_widget.dart';
 import 'package:flutter/material.dart';
 import '../../themes/app_colors.dart';
@@ -18,6 +25,7 @@ class _DetailScreenState extends State<DetailScreen>
   bool isFavorite = false;
   int quantity = 1;
   int _currentImageIndex = 0;
+  bool _isInitialized = false;
 
   // Social media options data
   final List<Map<String, dynamic>> _socialMediaOptions = [
@@ -80,12 +88,13 @@ class _DetailScreenState extends State<DetailScreen>
     'price': 18.99,
     'originalPrice': 24.99,
     'discount': 25,
-    'publisher': 'Penguin Classics',
-    'publishDate': '2023',
-    'pages': 180,
-    'language': 'English',
-    'isbn': '978-0-14-243724-7',
-    'category': 'Classic Literature',
+    'publisher': 'Nhà xuất bản Hội Nhà văn',
+    'publishDate': '2024',
+    'pages': 256,
+    'language': 'Tiếng Việt',
+    'isbn': '978-604-372-630-5',
+    'category': 'Tản văn / Hồi ký / Tình yêu',
+
     'images': [
       'https://example.com/book_image1.jpg',
       'https://example.com/book_image2.jpg',
@@ -140,22 +149,6 @@ class _DetailScreenState extends State<DetailScreen>
     },
   ];
 
-  final List<Map<String, dynamic>> relatedBooks = [
-    {
-      'title': 'To Kill a Mockingbird',
-      'author': 'Harper Lee',
-      'price': 16.99,
-      'rating': 4.8,
-    },
-    {
-      'title': 'Pride and Prejudice',
-      'author': 'Jane Austen',
-      'price': 14.99,
-      'rating': 4.7,
-    },
-    {'title': '1984', 'author': 'George Orwell', 'price': 15.99, 'rating': 4.9},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -172,17 +165,47 @@ class _DetailScreenState extends State<DetailScreen>
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+      if (args != null) {
+        final bookId = args['bookId'];
+        context.read<BookBloc>().add(LoadBookDetail(bookId));
+      }
+    }
+  }
+
   void _startAutoScroll() {
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_pageController.hasClients && bookData['images'].isNotEmpty) {
-        _currentImageIndex =
-            (_currentImageIndex + 1) % (bookData['images'].length as int);
-        _pageController.animateToPage(
-          _currentImageIndex,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
+      if (!_pageController.hasClients) return;
+
+      final state = context.read<BookBloc>().state;
+      if (state is! BookDetailLoaded) return;
+
+      final book = state.book;
+
+      // Gộp thumbnail + các ảnh phụ (giống trong phần hiển thị)
+      final allImages = [
+        'http://10.0.2.2:8000${book.thumbnail}',
+        ...book.images.map((img) => 'http://10.0.2.2:8000${img.url}'),
+      ];
+
+      if (allImages.isEmpty) return;
+
+      // Tăng chỉ số ảnh hiện tại
+      _currentImageIndex = (_currentImageIndex + 1) % allImages.length;
+
+      _pageController.animateToPage(
+        _currentImageIndex,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
     });
   }
 
@@ -231,6 +254,32 @@ class _DetailScreenState extends State<DetailScreen>
                 Container(height: 12, color: Colors.grey[100]),
 
                 // Related books
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: BlocBuilder<BookBloc, BookState>(
+                    builder: (context, state) {
+                      if (state is BookLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (state is BookDetailLoaded) {
+                        return BookSectionWidget(
+                          title: 'Popular Books',
+                          books: state.relatedBooks,
+                          onViewAll: () {},
+                          onBookTap: (book) {
+                            Navigator.pushNamed(
+                              context,
+                              '/detail',
+                              arguments: {'bookId': book.id},
+                            );
+                          },
+                        );
+                      } else if (state is BookError) {
+                        return Text('Lỗi: ${state.message}');
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
 
                 // Bottom spacing
                 const SizedBox(height: 24), // Space for bottom buttons
@@ -245,7 +294,7 @@ class _DetailScreenState extends State<DetailScreen>
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 400,
+      expandedHeight: 480,
       pinned: true,
       backgroundColor: AppColors.primary,
       leading: IconButton(
@@ -261,7 +310,10 @@ class _DetailScreenState extends State<DetailScreen>
             size: 20,
           ),
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          context.read<BookBloc>().add(LoadBooks());
+          Navigator.pop(context);
+        },
       ),
       actions: [
         IconButton(
@@ -341,93 +393,134 @@ class _DetailScreenState extends State<DetailScreen>
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 60),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Book cover carousel
-                      SizedBox(
-                        width: 220,
-                        height: 320,
-                        child: PageView.builder(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentImageIndex = index;
-                            });
-                          },
-                          itemCount: bookData['images'].length,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
+                  child: BlocBuilder<BookBloc, BookState>(
+                    builder: (context, state) {
+                      if (state is BookLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (state is BookDetailLoaded) {
+                        final book = state.book;
+
+                        // Gộp tất cả ảnh (thumbnail + danh sách ảnh phụ)
+                        final allImages = [
+                          'http://10.0.2.2:8000${book.thumbnail}',
+                          ...book.images.map(
+                            (img) => 'http://10.0.2.2:8000${img.url}',
+                          ),
+                        ];
+
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Book cover carousel
+                            SizedBox(
+                              width: 200,
+                              height: 320,
+                              child: PageView.builder(
+                                controller: _pageController,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentImageIndex = index;
+                                  });
+                                },
+                                itemCount: allImages.length,
+                                itemBuilder: (context, index) {
+                                  final imageUrl = allImages[index];
+
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          // Hiển thị card fallback khi lỗi
+                                          return Container(
+                                            color: Colors.grey[100],
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(
+                                                  Icons.menu_book,
+                                                  size: 80,
+                                                  color: AppColors.primaryDark,
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                      ),
+                                                  child: Text(
+                                                    book.title,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColors.text,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Image ${index + 1}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  color: Colors.grey[100],
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.menu_book,
-                                        size: 80,
-                                        color: AppColors.primaryDark,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                        ),
-                                        child: Text(
-                                          bookData['title'],
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.text,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Image ${index + 1}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Dots indicator
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                allImages.length,
+                                (index) => Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
+                                  width: _currentImageIndex == index ? 12 : 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        _currentImageIndex == index
+                                            ? Colors.white
+                                            : Colors.white.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Dots indicator
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          bookData['images'].length,
-                          (index) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: _currentImageIndex == index ? 12 : 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color:
-                                  _currentImageIndex == index
-                                      ? Colors.white
-                                      : Colors.white.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(4),
                             ),
-                          ),
-                        ),
-                      ),
-                    ],
+                          ],
+                        );
+                      } else if (state is BookError) {
+                        return Text('Lỗi: ${state.message}');
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ),
               ),
@@ -442,123 +535,149 @@ class _DetailScreenState extends State<DetailScreen>
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title and author
-          Text(
-            bookData['title'],
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.text,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'by ${bookData['author']}',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Rating and reviews
-          Row(
-            children: [
-              Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < bookData['rating'].floor()
-                        ? Icons.star
-                        : index < bookData['rating']
-                        ? Icons.star_half
-                        : Icons.star_border,
-                    color: Colors.amber,
-                    size: 20,
-                  );
-                }),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${bookData['rating']} (${formatReviewCount(bookData['reviewCount'])} reviews)',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Price section
-          Row(
-            children: [
-              Text(
-                '\$${bookData['price'].toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (bookData['originalPrice'] > bookData['price'])
+      child: BlocBuilder<BookBloc, BookState>(
+        builder: (context, state) {
+          if (state is BookLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is BookDetailLoaded) {
+            final book = state.book;
+            //final relatedBooks = state.relatedBooks;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  '\$${bookData['originalPrice'].toStringAsFixed(2)}',
+                  book.title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'by ${book.author}',
                   style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[500],
-                    decoration: TextDecoration.lineThrough,
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              if (bookData['discount'] > 0)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${bookData['discount']}% OFF',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+
+                const SizedBox(height: 16),
+
+                // Rating and reviews
+                Row(
+                  children: [
+                    Row(
+                      children: List.generate(5, (index) {
+                        return Icon(
+                          index < bookData['rating'].floor()
+                              ? Icons.star
+                              : index < bookData['rating']
+                              ? Icons.star_half
+                              : Icons.star_border,
+                          color: Colors.amber,
+                          size: 20,
+                        );
+                      }),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${bookData['rating']} (${formatReviewCount(bookData['reviewCount'])} reviews)',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
-            ],
-          ),
 
-          const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-          // Stock status
-          Row(
-            children: [
-              Icon(
-                bookData['inStock'] ? Icons.check_circle : Icons.cancel,
-                color: bookData['inStock'] ? Colors.green : Colors.red,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                bookData['inStock']
-                    ? 'In Stock (${bookData['stockCount']} available)'
-                    : 'Out of Stock',
-                style: TextStyle(
-                  color: bookData['inStock'] ? Colors.green : Colors.red,
-                  fontWeight: FontWeight.w600,
+                // Price section
+                Row(
+                  children: [
+                    if (book.saleOff > 0) ...[
+                      Text(
+                        FormatPrice.formatPrice(
+                          book.price * (1 - book.saleOff / 100),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        FormatPrice.formatPrice(book.price),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey[500],
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${book.saleOff.toInt()}% OFF',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        FormatPrice.formatPrice(book.price),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+
+                const SizedBox(height: 16),
+
+                // Stock status
+                Row(
+                  children: [
+                    Icon(
+                      book.quantity > 0 ? Icons.check_circle : Icons.cancel,
+                      color: book.quantity > 0 ? Colors.green : Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      book.quantity > 10
+                          ? 'In Stock (${book.quantity} available)'
+                          : book.quantity > 0
+                          ? 'Only ${book.quantity} left in stock!'
+                          : 'Out of Stock',
+                      style: TextStyle(
+                        color: book.quantity > 0 ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          } else if (state is BookError) {
+            return Text('Lỗi: ${state.message}');
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -688,77 +807,126 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   Widget _buildDescriptionTab() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              bookData['description'],
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.6,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Key Features:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.text,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...bookData['features']
-                .map<Widget>(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
+    return BlocBuilder<BookBloc, BookState>(
+      builder: (context, state) {
+        if (state is BookLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is BookDetailLoaded) {
+          final book = state.book;
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.description ?? 'No description available.',
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.6,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Key Features:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Lọc chỉ lấy các feature không có dấu '-'
+                  if (book.features
+                      .where((f) => !f.featureName.contains('-'))
+                      .isEmpty)
+                    const Text(
+                      'No features available.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    )
+                  else
+                    ...book.features
+                        .where((f) => !f.featureName.contains('-')) // lọc ở đây
+                        .map<Widget>(
+                          (feature) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    feature.featureName,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ],
-        ),
-      ),
+                ],
+              ),
+            ),
+          );
+        } else if (state is BookError) {
+          return Text('Lỗi: ${state.message}');
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   Widget _buildDetailsTab() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildDetailRow('Publisher', bookData['publisher']),
-            _buildDetailRow('Publication Date', bookData['publishDate']),
-            _buildDetailRow('Pages', '${bookData['pages']} pages'),
-            _buildDetailRow('Language', bookData['language']),
-            _buildDetailRow('ISBN', bookData['isbn']),
-            _buildDetailRow('Category', bookData['category']),
-          ],
-        ),
-      ),
+    return BlocBuilder<BookBloc, BookState>(
+      builder: (context, state) {
+        if (state is BookLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is BookDetailLoaded) {
+          final book = state.book;
+
+          // Lọc ra các feature có dấu '-' (loại 2)
+          final attributeFeatures =
+              book.features.where((f) => f.featureName.contains('-')).toList();
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (attributeFeatures.isEmpty)
+                    const Text(
+                      'No details available.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    )
+                  else
+                    ...attributeFeatures.map((feature) {
+                      // Tách thành label và value
+                      final parts = feature.featureName.split('-');
+                      final label = parts[0].trim();
+                      final value = parts.length > 1 ? parts[1].trim() : '';
+
+                      return _buildDetailRow(label, value);
+                    }),
+                ],
+              ),
+            ),
+          );
+        } else if (state is BookError) {
+          return Text('Lỗi: ${state.message}');
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
