@@ -1,14 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:heaven_book_app/model/category.dart';
+import 'package:heaven_book_app/services/auth_service.dart';
 
 class CategoryService {
-  final Dio _dio = Dio(
-    BaseOptions(baseUrl: 'http://10.0.2.2:8000/api/v1/category'),
-  );
+  final AuthService _authService;
+  CategoryService(this._authService);
 
-  Future<List<Category>> getAllCategories() async {
+  Dio get _publicDio => _authService.publicDio;
+  Future<List<Category>> getAllCategories({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
     try {
-      final response = await _dio.get('/?page=1&pageSize=10');
+      final response = await _publicDio.get(
+        '/category',
+        queryParameters: {'page': page, 'pageSize': pageSize},
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -21,15 +28,16 @@ class CategoryService {
               .map((e) => Category.fromJson(Map<String, dynamic>.from(e)))
               .toList();
         } else {
-          throw Exception('Invalid API response format');
+          throw Exception('❌ Dữ liệu trả về không đúng định dạng');
         }
       } else {
-        throw Exception(
-          'Failed to load categories (status: ${response.statusCode})',
-        );
+        throw Exception('⚠️ Lỗi tải danh mục (status: ${response.statusCode})');
       }
+    } on DioException catch (e) {
+      final message = e.response?.data['message'] ?? e.message;
+      throw Exception('🚫 Lỗi API: $message');
     } catch (e) {
-      throw Exception('Error loading categories: $e');
+      throw Exception('💥 Lỗi không xác định khi tải danh mục: $e');
     }
   }
 }

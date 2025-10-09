@@ -3,12 +3,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:heaven_book_app/interceptors/auth_interceptor.dart';
 
 class AuthService {
   late final Dio _publicDio;
   late final Dio _privateDio;
   late final CookieJar _cookieJar;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   //10.0.2.2
   //192.168.10.89
   AuthService() {
@@ -16,7 +18,7 @@ class AuthService {
 
     _publicDio = Dio(
       BaseOptions(
-        baseUrl: 'http://10.0.2.2:8000/api/v1/auth',
+        baseUrl: 'http://10.0.2.2:8000/api/v1',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
@@ -25,7 +27,7 @@ class AuthService {
 
     _privateDio = Dio(
       BaseOptions(
-        baseUrl: 'http://10.0.2.2:8000/api/v1/auth',
+        baseUrl: 'http://10.0.2.2:8000/api/v1',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
@@ -34,31 +36,11 @@ class AuthService {
 
     _publicDio.interceptors.add(CookieManager(_cookieJar));
     _privateDio.interceptors.add(CookieManager(_cookieJar));
-
-    _privateDio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await _secureStorage.read(key: 'access_token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          } else {
-            throw DioException(
-              requestOptions: options,
-              error: 'No authentication token found',
-              type: DioExceptionType.badResponse,
-            );
-          }
-          handler.next(options);
-        },
-        onError: (error, handler) {
-          if (error.response?.statusCode == 401) {
-            _handleTokenExpired();
-          }
-          handler.next(error);
-        },
-      ),
-    );
+    _privateDio.interceptors.add(AuthInterceptor(_secureStorage, this));
   }
+
+  Dio get privateDio => _privateDio;
+  Dio get publicDio => _publicDio;
 
   Future<Map<String, dynamic>> register({
     required String name,
@@ -68,7 +50,7 @@ class AuthService {
   }) async {
     try {
       final response = await _publicDio.post(
-        '/register',
+        '/auth/register',
         data: {
           "name": name,
           "email": email,
@@ -102,7 +84,7 @@ class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await _publicDio.post(
-        '/login',
+        '/auth/login',
         data: {"email": email, "password": password},
       );
 
@@ -180,15 +162,13 @@ class AuthService {
 
   Future<Map<String, dynamic>> refreshToken() async {
     try {
-      // 1️⃣ Lấy refresh token từ cookie
       final oldToken = await getRefreshToken();
       if (oldToken == null || oldToken.isEmpty) {
         throw Exception('Không tìm thấy refresh token trong cookie');
       }
 
-      // 2️⃣ Gọi API refresh, truyền refresh token qua Cookie
       final response = await _publicDio.post(
-        '/refresh',
+        '/auth/refresh',
         options: Options(headers: {'Cookie': 'refresh_token=$oldToken'}),
       );
 
@@ -248,7 +228,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> sendActivationCode() async {
     try {
-      final response = await _privateDio.post('/send-code');
+      final response = await _privateDio.post('/auth/send-code');
 
       if (response.statusCode == 200) {
         return {
@@ -274,7 +254,7 @@ class AuthService {
   Future<Map<String, dynamic>> verifyActivationCode(String code) async {
     try {
       final response = await _privateDio.post(
-        '/verify-code',
+        '/auth/verify-code',
         data: {'code': code},
       );
 
@@ -302,15 +282,14 @@ class AuthService {
     }
   }
 
-  Future<void> _handleTokenExpired() async {
+  Future<void> handleTokenExpired() async {
     await _secureStorage.deleteAll();
-    // ignore: avoid_debugPrint
-    debugPrint('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    debugPrint('❌ Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.');
   }
 
   Future<Map<String, dynamic>> logout() async {
     try {
-      final response = await _privateDio.post('/logout');
+      final response = await _privateDio.post('/auth/logout');
 
       if (response.statusCode == 200) {
         await _secureStorage.deleteAll();
@@ -358,7 +337,7 @@ class AuthService {
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await _publicDio.post(
-        '/forgot-password',
+        '/auth/forgot-password',
         data: {"email": email},
       );
 
@@ -391,7 +370,7 @@ class AuthService {
   }) async {
     try {
       final response = await _publicDio.post(
-        '/reset-password',
+        '/auth/reset-password',
         data: {"email": email, "code": code, "new_password": newPassword},
       );
 

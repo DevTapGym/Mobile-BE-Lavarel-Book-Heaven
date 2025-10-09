@@ -8,6 +8,7 @@ import 'package:heaven_book_app/bloc/category/category_event.dart';
 import 'package:heaven_book_app/bloc/category/category_state.dart';
 import 'package:heaven_book_app/model/book.dart';
 import 'package:heaven_book_app/model/category.dart';
+import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/services/category_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
@@ -27,29 +28,32 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController();
   Timer? _timer;
   int _currentPage = 0;
-  final _categoryBloc = CategoryBloc(CategoryService());
+  final _categoryBloc = CategoryBloc(CategoryService(AuthService()));
 
   @override
   void initState() {
     super.initState();
+
     // Set up timer for auto-scrolling every 3 seconds
-    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-      if (_currentPage < 3) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-      _bannerController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+        if (_bannerController.hasClients) {
+          if (_currentPage < 3) {
+            _currentPage++;
+          } else {
+            _currentPage = 0;
+          }
+          _bannerController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     });
 
-    // Load popular books
+    // Load dữ liệu
     context.read<BookBloc>().add(LoadBooks());
-
-    // Load categories using the shared _categoryBloc
     _categoryBloc.add(LoadCategories());
   }
 

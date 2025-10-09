@@ -3,9 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
 import 'package:heaven_book_app/bloc/auth/auth_event.dart';
 import 'package:heaven_book_app/bloc/auth/auth_state.dart';
-import 'package:heaven_book_app/screens/Auth/active_screen.dart';
-import 'package:heaven_book_app/screens/Auth/forgot_screen.dart';
-import 'package:heaven_book_app/screens/Auth/register_screen.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -52,27 +49,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToSignUp() {
-    final authBloc = context.read<AuthBloc>();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) =>
-                BlocProvider.value(value: authBloc, child: RegisterScreen()),
-      ),
-    );
+    if (mounted) {
+      Navigator.pushNamed(context, '/register');
+    }
   }
 
   void _navigateToForgotPassword() {
-    final authBloc = context.read<AuthBloc>();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) =>
-                BlocProvider.value(value: authBloc, child: ForgotScreen()),
-      ),
-    );
+    if (mounted) {
+      Navigator.pushNamed(context, '/forgot');
+    }
   }
 
   @override
@@ -92,17 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
             if (state.isActive == true) {
               Navigator.pushReplacementNamed(context, '/main');
             } else {
-              final authBloc = context.read<AuthBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => BlocProvider.value(
-                        value: authBloc,
-                        child: ActiveScreen(),
-                      ),
-                ),
-              );
+              if (mounted) {
+                Navigator.pushNamed(context, '/active');
+              }
             }
           }
           // 4.4. Nếu lỗi

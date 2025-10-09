@@ -4,7 +4,6 @@ import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
 import 'package:heaven_book_app/bloc/auth/auth_event.dart';
 import 'package:heaven_book_app/bloc/auth/auth_state.dart';
-import 'package:heaven_book_app/screens/Auth/reset_screen.dart';
 
 class ForgotScreen extends StatefulWidget {
   const ForgotScreen({super.key});
@@ -31,22 +30,10 @@ class _ForgotScreenState extends State<ForgotScreen> {
           );
 
           Navigator.pop(context);
-          final navigator = Navigator.of(context);
 
-          final authBloc = context.read<AuthBloc>();
-          Future.delayed(const Duration(milliseconds: 3000), () {
-            if (mounted) {
-              navigator.push(
-                MaterialPageRoute(
-                  builder:
-                      (context) => BlocProvider.value(
-                        value: authBloc,
-                        child: ResetScreen(email: _emailController.text),
-                      ),
-                ),
-              );
-            }
-          });
+          if (mounted) {
+            Navigator.pushNamed(context, '/register');
+          }
         }
       },
       child: Scaffold(
@@ -233,7 +220,7 @@ class _ForgotScreenState extends State<ForgotScreen> {
                             ElevatedButton(
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
-                                  BlocProvider.of<AuthBloc>(context).add(
+                                  context.read<AuthBloc>().add(
                                     ForgotPasswordRequested(
                                       email: _emailController.text,
                                     ),

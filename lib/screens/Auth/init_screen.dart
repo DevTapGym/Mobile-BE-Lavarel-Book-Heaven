@@ -5,8 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../bloc/auth/auth_state.dart';
-import '../../services/auth_service.dart';
-import 'login_screen.dart';
 
 class InitScreen extends StatefulWidget {
   const InitScreen({super.key});
@@ -17,18 +15,11 @@ class InitScreen extends StatefulWidget {
 
 class _InitScreenState extends State<InitScreen> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  late final AuthBloc _authBloc;
 
   @override
   void initState() {
     super.initState();
-    _authBloc = AuthBloc(AuthService());
     _checkAutoLogin();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> _checkAutoLogin() async {
@@ -79,11 +70,11 @@ class _InitScreenState extends State<InitScreen> {
     try {
       debugPrint('⏳ [InitScreen] Bắt đầu refresh token...');
 
-      // Trigger refresh token và đợi kết quả
-      _authBloc.add(AppStarted());
+      // Sử dụng global AuthBloc thay vì local instance
+      context.read<AuthBloc>().add(AppStarted());
 
       // Listen for result one time only
-      await for (final state in _authBloc.stream) {
+      await for (final state in context.read<AuthBloc>().stream) {
         if (state is AuthSuccess) {
           debugPrint(
             '🎉 [InitScreen] Refresh token thành công → Chuyển vào Main',
@@ -146,15 +137,7 @@ class _InitScreenState extends State<InitScreen> {
 
   void _navigateToLogin() {
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder:
-              (context) => BlocProvider.value(
-                value: _authBloc,
-                child: const LoginScreen(),
-              ),
-        ),
-      );
+      Navigator.pushNamed(context, '/login');
     }
   }
 
@@ -166,21 +149,15 @@ class _InitScreenState extends State<InitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _authBloc,
-      child: const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text(
-                'Đang kiểm tra đăng nhập...',
-                style: TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Đang kiểm tra đăng nhập...', style: TextStyle(fontSize: 16)),
+          ],
         ),
       ),
     );

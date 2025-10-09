@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
+import 'package:heaven_book_app/bloc/auth/auth_event.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/repositories/book_repository.dart';
+import 'package:heaven_book_app/screens/Auth/active_screen.dart';
+import 'package:heaven_book_app/screens/Auth/forgot_screen.dart';
+import 'package:heaven_book_app/screens/Auth/login_screen.dart';
+import 'package:heaven_book_app/screens/Auth/register_screen.dart';
+import 'package:heaven_book_app/screens/Auth/reset_screen.dart';
 import 'package:heaven_book_app/screens/Cart/check_out_screen.dart';
 import 'package:heaven_book_app/screens/Home/detail_review_screen.dart';
 import 'package:heaven_book_app/screens/Home/detail_screen.dart';
@@ -18,11 +25,15 @@ import 'package:heaven_book_app/screens/Profile/edit_profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/reward_screen.dart';
 import 'package:heaven_book_app/screens/Profile/shipping_address_screen.dart';
+import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
 void main() {
-  final bookRepository = BookRepository();
+  WidgetsFlutterBinding.ensureInitialized(); // Thêm dòng này để đảm bảo Flutter được khởi tạo
+
+  final bookRepository = BookRepository(AuthService());
+  final authService = AuthService();
 
   runApp(
     MultiBlocProvider(
@@ -30,8 +41,11 @@ void main() {
         BlocProvider<BookBloc>(
           create: (_) => BookBloc(bookRepository)..add(LoadBooks()),
         ),
+        BlocProvider<AuthBloc>(
+          create: (_) => AuthBloc(authService)..add(AppStarted()),
+        ),
       ],
-      child: MyApp(),
+      child: const MyApp(), // Thêm const vì MyApp có const constructor
     ),
   );
 }
@@ -48,7 +62,12 @@ class MyApp extends StatelessWidget {
       routes: {
         '/main': (context) => const MainScreen(),
         '/onboarding': (context) => const OnboardingWrapper(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/forgot': (context) => const ForgotScreen(),
+        '/active': (context) => const ActiveScreen(),
 
+        //'/reset': (context) => const ResetScreen(),
         '/home': (context) => const HomeScreen(),
         '/result': (context) => const ResultScreen(),
         '/detail': (context) => const DetailScreen(),
@@ -64,9 +83,20 @@ class MyApp extends StatelessWidget {
         '/edit-profile': (context) => const EditProfileScreen(),
         '/shipping-address': (context) => const ShippingAddressScreen(),
         '/add-address': (context) => const AddAddressScreen(),
-        'change-password': (context) => const ChangePasswordScreen(),
+        '/change-password': (context) => const ChangePasswordScreen(),
         '/reward': (context) => RewardScreen(),
         '/detail-voucher': (context) => const DetailVoucherScreen(),
+      },
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/reset':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => ResetScreen(email: args['email']),
+            );
+          default:
+            return MaterialPageRoute(builder: (_) => LoginScreen());
+        }
       },
     );
   }
