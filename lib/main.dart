@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
 import 'package:heaven_book_app/bloc/auth/auth_event.dart';
+import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
+import 'package:heaven_book_app/bloc/cart/cart_state.dart';
 import 'package:heaven_book_app/repositories/book_repository.dart';
+import 'package:heaven_book_app/repositories/cart_repository.dart';
 import 'package:heaven_book_app/screens/Auth/active_screen.dart';
 import 'package:heaven_book_app/screens/Auth/forgot_screen.dart';
 import 'package:heaven_book_app/screens/Auth/login_screen.dart';
@@ -30,9 +35,10 @@ import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // Thêm dòng này để đảm bảo Flutter được khởi tạo
+  WidgetsFlutterBinding.ensureInitialized();
 
   final bookRepository = BookRepository(AuthService());
+  final cartRepository = CartRepository(AuthService());
   final authService = AuthService();
 
   runApp(
@@ -44,8 +50,22 @@ void main() {
         BlocProvider<AuthBloc>(
           create: (_) => AuthBloc(authService)..add(AppStarted()),
         ),
+        BlocProvider<CartBloc>(
+          create:
+              (_) => CartBloc(cartRepository, bookRepository)..add(LoadCart()),
+        ),
       ],
-      child: const MyApp(), // Thêm const vì MyApp có const constructor
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthLoggedOut) {
+            // Chuyển về màn hình login
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/login', (route) => false);
+          }
+        },
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -127,69 +147,82 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, -2),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        int badgeCount = 0;
+
+        if (state is CartLoaded) {
+          badgeCount = state.cart.totalItems;
+        }
+        return Scaffold(
+          body: _screens[_selectedIndex],
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-          ],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            selectedItemColor: AppColors.primaryDark,
-            unselectedItemColor: Colors.grey,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedFontSize: 14,
-            unselectedFontSize: 0,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.3,
-              fontSize: 14,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              child: BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
+                currentIndex: _selectedIndex,
+                onTap: _onItemTapped,
+                selectedItemColor: AppColors.primaryDark,
+                unselectedItemColor: Colors.grey,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedFontSize: 14,
+                unselectedFontSize: 0,
+                selectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                  fontSize: 14,
+                ),
+                showUnselectedLabels: false,
+                items: [
+                  _buildNavItem(
+                    Icons.home_outlined,
+                    Icons.home,
+                    'Home',
+                    _selectedIndex == 0,
+                  ),
+                  _buildNavItem(
+                    Icons.receipt_long_outlined,
+                    Icons.receipt_long,
+                    'Orders',
+                    _selectedIndex == 1,
+                  ),
+                  _buildNavItem(
+                    Icons.shopping_cart_outlined,
+                    Icons.shopping_cart,
+                    'Cart',
+                    _selectedIndex == 2,
+                    badgeCount: badgeCount,
+                  ),
+                  _buildNavItem(
+                    Icons.person_outline,
+                    Icons.person,
+                    'Profile',
+                    _selectedIndex == 3,
+                  ),
+                ],
+              ),
             ),
-            showUnselectedLabels: false,
-            items: [
-              _buildNavItem(
-                Icons.home_outlined,
-                Icons.home,
-                'Home',
-                _selectedIndex == 0,
-              ),
-              _buildNavItem(
-                Icons.receipt_long_outlined,
-                Icons.receipt_long,
-                'Orders',
-                _selectedIndex == 1,
-              ),
-              _buildNavItem(
-                Icons.shopping_cart_outlined,
-                Icons.shopping_cart,
-                'Cart',
-                _selectedIndex == 2,
-                badgeCount: 3,
-              ),
-              _buildNavItem(
-                Icons.person_outline,
-                Icons.person,
-                'Profile',
-                _selectedIndex == 3,
-              ),
-            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

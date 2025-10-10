@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
+import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/model/book.dart';
+import 'package:heaven_book_app/model/cart_item.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/custom_circle_checkbox.dart';
 import 'package:intl/intl.dart'; // Thêm import cho intl
 
@@ -266,49 +273,60 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        backgroundColor: AppColors.primary,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Shopping Cart (${cartItems.length})',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            child: Text(
-              isEditMode ? 'Done' : 'Edit',
-              style: TextStyle(color: AppColors.black70, fontSize: 16),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          return Scaffold(
+            appBar: AppBar(
+              toolbarHeight: 70,
+              backgroundColor: AppColors.primary,
+              automaticallyImplyLeading: false,
+              title: Text(
+                'Shopping Cart (${state.cart.totalItems})',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                TextButton(
+                  child: Text(
+                    isEditMode ? 'Done' : 'Edit',
+                    style: TextStyle(color: AppColors.black70, fontSize: 16),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      isEditMode = !isEditMode;
+                    });
+                  },
+                ),
+              ],
             ),
-            onPressed: () {
-              setState(() {
-                isEditMode = !isEditMode;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(color: AppColors.background),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCartItemsSection(),
-              _buildRecommendedHeader(),
-              _buildRecommendedItemsGrid(),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+            body: Container(
+              height: double.infinity,
+              decoration: BoxDecoration(color: AppColors.background),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCartItemsSection(),
+                    _buildRecommendedHeader(),
+                    _buildRecommendedItemsGrid(),
+                  ],
+                ),
+              ),
+            ),
+            bottomNavigationBar: _buildBottomNavigationBar(),
+          );
+        } else if (state is CartError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -487,13 +505,43 @@ class _CartScreenState extends State<CartScreen> {
 
   // Widget for the cart items section
   Widget _buildCartItemsSection() {
-    return Column(
-      children: cartItems.map((item) => _buildCartItem(item)).toList(),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          final cartItems = state.cart.items;
+          if (cartItems.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Text(
+                  'Your cart is empty.',
+                  style: TextStyle(fontSize: 18, color: Colors.black54),
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: cartItems.length,
+            itemBuilder: (context, index) {
+              final item = cartItems[index];
+              return _buildCartItem(item);
+            },
+          );
+        } else if (state is CartError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   // Widget for a single cart item
-  Widget _buildCartItem(Map<String, dynamic> item) {
+  Widget _buildCartItem(CartItem items) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
@@ -518,24 +566,68 @@ class _CartScreenState extends State<CartScreen> {
           children: [
             SizedBox(width: 16),
             CustomCircleCheckbox(
-              value: item['isSelected'] ?? false,
+              value: items.isSelected,
               onChanged: (value) {
                 setState(() {
-                  item['isSelected'] = value;
+                  items.isSelected = value!;
                 });
               },
             ),
             SizedBox(width: 10),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Container(
-                width: 100,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8),
+            Container(
+              height: 160,
+              width: 100,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                  bottom: Radius.circular(8),
                 ),
-                child: Icon(Icons.book, size: 40, color: Colors.grey[600]),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black60,
+                    blurRadius: 6,
+                    offset: Offset(2, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                  bottom: Radius.circular(8),
+                ),
+                child:
+                    items.bookThumbnail.isNotEmpty
+                        ? Image.network(
+                          'http://10.0.2.2:8000${items.bookThumbnail}',
+                          width: 100,
+                          height: 160,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.book,
+                                size: 60,
+                                color: AppColors.primaryDark,
+                              ),
+                            );
+                          },
+                        )
+                        : const Center(
+                          child: Icon(
+                            Icons.book,
+                            size: 60,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
               ),
             ),
             SizedBox(width: 10),
@@ -550,7 +642,7 @@ class _CartScreenState extends State<CartScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item['title']!,
+                          items.bookName,
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 18,
@@ -558,11 +650,11 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ),
                         Text(
-                          item['author']!,
+                          'by ${items.bookAuthor}',
                           style: TextStyle(color: Colors.black54, fontSize: 15),
                         ),
                         Text(
-                          '${_currencyFormat.format(item['price'])} đ',
+                          FormatPrice.formatPrice(items.unitPrice),
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
@@ -572,7 +664,7 @@ class _CartScreenState extends State<CartScreen> {
                         Row(
                           children: [
                             Text(
-                              '${_currencyFormat.format(item['originalPrice'])} đ',
+                              FormatPrice.formatPrice(items.unitPrice),
                               style: TextStyle(
                                 decoration: TextDecoration.lineThrough,
                                 decorationColor: Colors.grey,
@@ -581,31 +673,32 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                             ),
                             SizedBox(width: 8),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.discountRed,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(2, 4),
+                            if (items.sale > 0)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.discountRed,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(2, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  '-${items.sale.toInt()}%',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                ],
-                              ),
-                              child: Text(
-                                item['discount']!,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ],
@@ -615,7 +708,7 @@ class _CartScreenState extends State<CartScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'In stock: ${item['inStock']}',
+                          'In stock: ${items.inStock}',
                           style: TextStyle(
                             color: AppColors.black70,
                             fontSize: 14,
@@ -643,13 +736,20 @@ class _CartScreenState extends State<CartScreen> {
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   icon: Icon(Icons.remove, size: 18),
-                                  onPressed: () {
-                                    setState(() {
-                                      if (item['quantity'] > 1) {
-                                        item['quantity']--;
-                                      }
-                                    });
-                                  },
+                                  onPressed:
+                                      items.quantity > 1
+                                          ? () {
+                                            setState(() {
+                                              items.quantity--;
+                                            });
+                                            context.read<CartBloc>().add(
+                                              UpdateCartItemQuantity(
+                                                items.id,
+                                                items.quantity,
+                                              ),
+                                            );
+                                          }
+                                          : null,
                                 ),
                               ),
                               Padding(
@@ -657,7 +757,7 @@ class _CartScreenState extends State<CartScreen> {
                                   horizontal: 6,
                                 ),
                                 child: Text(
-                                  '${item['quantity']}',
+                                  items.quantity.toString(),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -671,13 +771,21 @@ class _CartScreenState extends State<CartScreen> {
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   icon: Icon(Icons.add, size: 18),
-                                  onPressed: () {
-                                    setState(() {
-                                      if (item['quantity'] < item['inStock']) {
-                                        item['quantity']++;
-                                      }
-                                    });
-                                  },
+                                  onPressed:
+                                      items.quantity < items.inStock
+                                          ? () {
+                                            setState(() {
+                                              items.quantity++;
+                                            });
+                                            // Có thể gọi API cập nhật số lượng ở đây
+                                            context.read<CartBloc>().add(
+                                              UpdateCartItemQuantity(
+                                                items.id,
+                                                items.quantity,
+                                              ),
+                                            );
+                                          }
+                                          : null,
                                 ),
                               ),
                             ],
@@ -706,9 +814,7 @@ class _CartScreenState extends State<CartScreen> {
               child: IconButton(
                 icon: Icon(Icons.delete, color: Colors.white, size: 38),
                 onPressed: () {
-                  setState(() {
-                    cartItems.remove(item);
-                  });
+                  // Handle item removal
                 },
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(),
@@ -746,152 +852,201 @@ class _CartScreenState extends State<CartScreen> {
 
   // Widget for the recommended items grid
   Widget _buildRecommendedItemsGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.55,
-        ),
-        itemCount: recommendedItems.length > 6 ? 6 : recommendedItems.length,
-        itemBuilder:
-            (context, index) => _buildRecommendedItem(recommendedItems[index]),
-      ),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.55,
+              ),
+              itemCount: state.relatedBooks.length,
+              itemBuilder:
+                  (context, index) =>
+                      _buildRecommendedItem(state.relatedBooks[index]),
+            ),
+          );
+        } else if (state is CartError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   // Widget for a single recommended item
-  Widget _buildRecommendedItem(Map<String, dynamic> book) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 6,
-            spreadRadius: 1,
-            offset: const Offset(1, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+  Widget _buildRecommendedItem(Book book) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/detail', arguments: {'bookId': book.id});
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              spreadRadius: 1,
+              offset: const Offset(1, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    child:
+                        book.thumbnail.isNotEmpty
+                            ? Image.network(
+                              'http://10.0.2.2:8000${book.thumbnail}',
+                              width: double.infinity,
+                              height: 170,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(
+                                    Icons.book,
+                                    size: 60,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                );
+                              },
+                            )
+                            : const Center(
+                              child: Icon(
+                                Icons.book,
+                                size: 60,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
                   ),
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.book,
-                    size: 50,
-                    color: AppColors.primaryDark,
+                if (book.saleOff > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '-${book.saleOff.toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              if (book['discount'] != null && book['discount'] != '')
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      book['discount'],
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'by ${book.author}',
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Text(
+                          '5',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Icon(Icons.star, size: 16, color: Colors.amber),
+                        SizedBox(
+                          width: 12,
+                          height: 16,
+                          child: VerticalDivider(
+                            color: AppColors.black70,
+                            thickness: 1.5,
+                          ),
+                        ),
+                        Text(
+                          '${book.sold} sold',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      FormatPrice.formatPrice(book.price),
+                      style: TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book['title'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.text,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book['author'] != null ? 'by ${book['author']}' : '',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Text(
-                        book['rating'] != null
-                            ? book['rating'].toString()
-                            : '-',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black70,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const Icon(Icons.star, size: 16, color: Colors.amber),
-                      SizedBox(
-                        width: 12,
-                        height: 16,
-                        child: VerticalDivider(
-                          color: AppColors.black70,
-                          thickness: 1.5,
-                        ),
-                      ),
-                      Text(
-                        book['sold'] != null ? '${book['sold']} sold' : '-',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '${_currencyFormat.format(book['price'])} đ',
-                    style: TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

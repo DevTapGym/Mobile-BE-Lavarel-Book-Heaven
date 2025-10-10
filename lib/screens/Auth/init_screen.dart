@@ -52,7 +52,9 @@ class _InitScreenState extends State<InitScreen> {
         if (mounted) {
           _navigateToLogin();
         }
-      } else {
+      }
+
+      if (_isTokenExpired(accessToken) == false && isActive == '1') {
         debugPrint('🎉 [InitScreen] Token còn hạn → Chuyển thẳng vào Main');
         if (mounted) {
           _navigateToMain();

@@ -37,6 +37,8 @@ class AuthFailure extends AuthState {
   List<Object?> get props => [message];
 }
 
+class AuthLoggedOut extends AuthState {}
+
 class ActivationCodeSent extends AuthState {
   final String message;
 

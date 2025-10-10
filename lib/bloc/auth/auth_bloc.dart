@@ -9,6 +9,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   AuthBloc(this.authService) : super(AuthInitial()) {
+    authService.onTokenExpired.listen((_) {
+      add(TokenExpiredEvent());
+    });
+
     on<RegisterRequested>((event, emit) async {
       emit(AuthLoading());
       try {
@@ -132,6 +136,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } catch (e) {
         emit(AuthFailure('Không thể đặt lại mật khẩu: ${e.toString()}'));
       }
+    });
+
+    on<TokenExpiredEvent>((event, emit) async {
+      emit(AuthFailure('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'));
+      emit(AuthLoggedOut());
     });
   }
 }
