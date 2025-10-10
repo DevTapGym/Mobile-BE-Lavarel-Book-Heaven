@@ -1,10 +1,10 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:heaven_book_app/model/book.dart';
 import 'package:heaven_book_app/services/api_client.dart';
-import 'package:heaven_book_app/services/auth_service.dart';
 
 class BookRepository {
-  final apiClient = ApiClient(FlutterSecureStorage(), AuthService());
+  final ApiClient apiClient;
+
+  BookRepository(this.apiClient);
 
   Future<List<Book>> getAllBooks() async {
     try {

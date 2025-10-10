@@ -103,6 +103,9 @@ class AuthService {
         final newAccessToken = data['access_token'];
 
         await _secureStorage.write(key: 'access_token', value: newAccessToken);
+        debugPrint('✅ Access token đã được làm mới và lưu');
+        final token = await _secureStorage.read(key: 'access_token');
+        debugPrint('🔑 [InitScreen] New access token: $token');
 
         final setCookieHeader = response.headers['set-cookie'];
         if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
@@ -118,7 +121,9 @@ class AuthService {
               key: 'refresh_token',
               value: newRefresh.value,
             );
-            debugPrint('Refresh token mới đã lưu');
+            debugPrint('✅ Refresh token mới đã lưu');
+            final refresh = await _secureStorage.read(key: 'refresh_token');
+            debugPrint('🔑 [InitScreen] New refresh token: $refresh');
           }
         }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
-import 'package:heaven_book_app/bloc/auth/auth_event.dart';
 import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
@@ -12,6 +12,7 @@ import 'package:heaven_book_app/repositories/book_repository.dart';
 import 'package:heaven_book_app/repositories/cart_repository.dart';
 import 'package:heaven_book_app/screens/Auth/active_screen.dart';
 import 'package:heaven_book_app/screens/Auth/forgot_screen.dart';
+import 'package:heaven_book_app/screens/Auth/init_screen.dart';
 import 'package:heaven_book_app/screens/Auth/login_screen.dart';
 import 'package:heaven_book_app/screens/Auth/register_screen.dart';
 import 'package:heaven_book_app/screens/Auth/reset_screen.dart';
@@ -30,16 +31,19 @@ import 'package:heaven_book_app/screens/Profile/edit_profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/reward_screen.dart';
 import 'package:heaven_book_app/screens/Profile/shipping_address_screen.dart';
+import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final bookRepository = BookRepository();
-  final cartRepository = CartRepository();
+  final storage = FlutterSecureStorage();
   final authService = AuthService();
+  final apiClient = ApiClient(storage, authService);
+
+  final cartRepository = CartRepository(apiClient);
+  final bookRepository = BookRepository(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -47,9 +51,7 @@ void main() {
         BlocProvider<BookBloc>(
           create: (_) => BookBloc(bookRepository)..add(LoadBooks()),
         ),
-        BlocProvider<AuthBloc>(
-          create: (_) => AuthBloc(authService)..add(AppStarted()),
-        ),
+        BlocProvider<AuthBloc>(create: (_) => AuthBloc(authService)),
         BlocProvider<CartBloc>(
           create:
               (_) => CartBloc(cartRepository, bookRepository)..add(LoadCart()),
@@ -61,7 +63,7 @@ void main() {
             // Chuyển về màn hình login
             Navigator.of(
               context,
-            ).pushNamedAndRemoveUntil('/login', (route) => false);
+            ).pushNamedAndRemoveUntil('/init', (route) => false);
           }
         },
         child: const MyApp(),
@@ -86,6 +88,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/forgot': (context) => const ForgotScreen(),
         '/active': (context) => const ActiveScreen(),
+        '/init': (context) => const InitScreen(),
 
         //'/reset': (context) => const ResetScreen(),
         '/home': (context) => const HomeScreen(),

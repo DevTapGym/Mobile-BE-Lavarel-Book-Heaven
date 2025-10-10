@@ -2,22 +2,17 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../services/auth_service.dart'; // Import AuthService
+import '../services/auth_service.dart';
 
 class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage _storage;
+  final AuthService _authService;
   final Dio _dio;
-  final AuthService _authService; // Thêm AuthService
 
-  // Prevent multiple concurrent refresh requests
   bool _isRefreshing = false;
-  Completer<bool>? _refreshCompleter; // Đổi từ String? thành bool
+  Completer<bool>? _refreshCompleter;
 
-  AuthInterceptor(
-    this._storage,
-    this._dio,
-    this._authService,
-  ); // Update constructor
+  AuthInterceptor(this._storage, this._dio, this._authService);
 
   @override
   void onRequest(
@@ -25,7 +20,7 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     final token = await _storage.read(key: 'access_token');
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
@@ -33,109 +28,97 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Check if it's a 401 error with the specific message
+    // Nếu lỗi 401
     if (err.response?.statusCode == 401) {
       final responseData = err.response?.data;
 
-      // Check if it's the specific unauthorized error
+      // Kiểm tra lỗi Unauthorized
       if (responseData is Map<String, dynamic> &&
           responseData['error'] == 'Unauthorized' &&
           responseData['message'] == 'Token is invalid or not transmitted') {
-        // Skip refresh for refresh token endpoint to avoid infinite loop
+        // Nếu request chính là refresh token → logout
         if (err.requestOptions.path.contains('/refresh') ||
             err.requestOptions.path.contains('/auth/refresh')) {
           await _handleLogout();
           return handler.reject(err);
         }
 
-        // Handle token refresh using AuthService
-        final refreshSuccess = await _handleTokenRefresh();
-
-        if (refreshSuccess) {
-          // Get new token from storage
-          final newToken = await _storage.read(key: 'access_token');
-
-          if (newToken != null) {
-            // Retry the original request with new token
-            final retryOptions = err.requestOptions;
-            retryOptions.headers['Authorization'] = 'Bearer $newToken';
-
-            try {
-              final response = await _dio.fetch(retryOptions);
-              return handler.resolve(response);
-            } catch (retryError) {
-              if (retryError is DioException) {
-                return handler.reject(retryError);
+        // Nếu đang refresh token → đợi hoàn tất
+        if (_isRefreshing) {
+          final success = await _refreshCompleter?.future ?? false;
+          if (success) {
+            // Token mới đã được lưu → retry request
+            final newToken = await _storage.read(key: 'access_token');
+            if (newToken != null) {
+              final opts = err.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $newToken';
+              try {
+                final response = await _dio.fetch(opts);
+                return handler.resolve(response);
+              } catch (e) {
+                return handler.reject(e as DioException);
               }
-              return handler.reject(err);
             }
+          } else {
+            await _handleLogout();
+            return handler.reject(err);
           }
         }
 
-        // Refresh failed, logout user
-        await _handleLogout();
-        return handler.reject(err);
+        // Chưa refresh → bắt đầu refresh token
+        _isRefreshing = true;
+        _refreshCompleter = Completer<bool>();
+
+        try {
+          final result = await _authService.refreshToken();
+          final success = result['success'] == true;
+
+          if (success) {
+            debugPrint('✅ Refresh token thành công');
+
+            // Retry request với token mới
+            final newToken = await _storage.read(key: 'access_token');
+            if (newToken != null) {
+              final opts = err.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $newToken';
+              final response = await _dio.fetch(opts);
+              _refreshCompleter!.complete(true);
+              return handler.resolve(response);
+            }
+          } else {
+            debugPrint('❌ Refresh token thất bại: ${result['message']}');
+            _refreshCompleter!.complete(false);
+            await _handleLogout();
+            return handler.reject(err);
+          }
+        } catch (e) {
+          debugPrint('🚨 Lỗi refresh token: $e');
+          _refreshCompleter!.complete(false);
+          await _handleLogout();
+          return handler.reject(err);
+        } finally {
+          _isRefreshing = false;
+          _refreshCompleter = null;
+        }
       }
     }
 
-    // For other errors, continue with default behavior
+    // Các lỗi khác → cho đi bình thường
     handler.next(err);
-  }
-
-  Future<bool> _handleTokenRefresh() async {
-    // If already refreshing, wait for the current refresh to complete
-    if (_isRefreshing) {
-      return await _refreshCompleter?.future ?? false;
-    }
-
-    _isRefreshing = true;
-    _refreshCompleter = Completer<bool>();
-
-    try {
-      debugPrint('🔄 [AuthInterceptor] Bắt đầu refresh token...');
-
-      final result = await _authService.refreshToken();
-
-      final success = result['success'] == true;
-
-      if (success) {
-        debugPrint('✅ [AuthInterceptor] Refresh token thành công');
-      } else {
-        debugPrint(
-          '❌ [AuthInterceptor] Refresh token thất bại: ${result['message']}',
-        );
-      }
-
-      _refreshCompleter!.complete(success);
-      return success;
-    } catch (e) {
-      debugPrint('🚨 [AuthInterceptor] Refresh token error: $e');
-      _refreshCompleter!.complete(false);
-      return false;
-    } finally {
-      _isRefreshing = false;
-      _refreshCompleter = null;
-    }
   }
 
   Future<void> _handleLogout() async {
     try {
-      debugPrint('🚪 [AuthInterceptor] Bắt đầu logout do token invalid...');
-
+      debugPrint('🚪 Logout do token invalid...');
       await _authService.logout();
       await _authService.handleTokenExpired();
-
-      debugPrint(
-        '✅ [AuthInterceptor] Logout hoàn tất - đã trigger token expired event',
-      );
     } catch (e) {
-      debugPrint('🚨 [AuthInterceptor] Logout error: $e');
-
+      debugPrint('🚨 Lỗi logout: $e');
       try {
         await _storage.deleteAll();
-        debugPrint('🧹 [AuthInterceptor] Fallback: Đã clear storage thủ công');
+        debugPrint('🧹 Clear storage thủ công');
       } catch (storageError) {
-        debugPrint('🚨 [AuthInterceptor] Storage clear error: $storageError');
+        debugPrint('🚨 Storage clear error: $storageError');
       }
     }
   }

@@ -1,11 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:heaven_book_app/model/cart.dart';
 import 'package:heaven_book_app/services/api_client.dart';
-import 'package:heaven_book_app/services/auth_service.dart';
 
 class CartRepository {
-  final apiClient = ApiClient(FlutterSecureStorage(), AuthService());
+  final ApiClient apiClient;
+
+  CartRepository(this.apiClient);
 
   Future<Cart> getMyCart() async {
     try {
@@ -23,6 +24,9 @@ class CartRepository {
       } else {
         throw Exception('Failed to load cart (status: ${response.statusCode})');
       }
+    } on DioException catch (e) {
+      debugPrint('DioException in getMyCart: $e');
+      rethrow;
     } catch (e) {
       debugPrint('Error in getMyCart: $e');
       throw Exception('Error loading cart: $e');
@@ -41,6 +45,9 @@ class CartRepository {
           'Failed to update cart item (status: ${response.statusCode})',
         );
       }
+    } on DioException catch (e) {
+      debugPrint('DioException in updateCartItemQuantity: $e');
+      rethrow;
     } catch (e) {
       debugPrint('Error in updateCartItemQuantity: $e');
       throw Exception('Error updating cart item: $e');
