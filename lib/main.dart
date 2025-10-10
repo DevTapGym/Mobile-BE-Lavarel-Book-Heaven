@@ -37,8 +37,8 @@ import 'screens/Auth/onboarding_wrapper.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final bookRepository = BookRepository(AuthService());
-  final cartRepository = CartRepository(AuthService());
+  final bookRepository = BookRepository();
+  final cartRepository = CartRepository();
   final authService = AuthService();
 
   runApp(

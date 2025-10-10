@@ -13,6 +13,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       add(TokenExpiredEvent());
     });
 
+    on<LogoutRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        await authService.logout();
+        emit(AuthLoggedOut());
+      } catch (e) {
+        emit(AuthFailure('Đăng xuất thất bại: ${e.toString()}'));
+      }
+    });
+
     on<RegisterRequested>((event, emit) async {
       emit(AuthLoading());
       try {
@@ -61,7 +71,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           return;
         }
 
-        // Không có refresh token → yêu cầu login
         emit(AuthFailure('Cần đăng nhập lại'));
       } catch (e) {
         emit(AuthFailure('Auto login thất bại: ${e.toString()}'));

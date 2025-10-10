@@ -1,18 +1,18 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:heaven_book_app/model/category.dart';
+import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 
 class CategoryService {
-  final AuthService _authService;
-  CategoryService(this._authService);
+  final apiClient = ApiClient(FlutterSecureStorage(), AuthService());
 
-  Dio get _publicDio => _authService.publicDio;
   Future<List<Category>> getAllCategories({
     int page = 1,
     int pageSize = 10,
   }) async {
     try {
-      final response = await _publicDio.get(
+      final response = await apiClient.publicDio.get(
         '/category',
         queryParameters: {'page': page, 'pageSize': pageSize},
       );

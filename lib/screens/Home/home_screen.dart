@@ -8,7 +8,6 @@ import 'package:heaven_book_app/bloc/category/category_event.dart';
 import 'package:heaven_book_app/bloc/category/category_state.dart';
 import 'package:heaven_book_app/model/book.dart';
 import 'package:heaven_book_app/model/category.dart';
-import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/services/category_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
@@ -28,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController();
   Timer? _timer;
   int _currentPage = 0;
-  final _categoryBloc = CategoryBloc(CategoryService(AuthService()));
+  final _categoryBloc = CategoryBloc(CategoryService());
 
   @override
   void initState() {

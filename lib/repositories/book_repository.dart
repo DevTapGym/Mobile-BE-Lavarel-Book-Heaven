@@ -1,16 +1,14 @@
-import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:heaven_book_app/model/book.dart';
+import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 
 class BookRepository {
-  final AuthService _authService;
-  BookRepository(this._authService);
-
-  Dio get _publicDio => _authService.publicDio;
+  final apiClient = ApiClient(FlutterSecureStorage(), AuthService());
 
   Future<List<Book>> getAllBooks() async {
     try {
-      final response = await _publicDio.get('/book/?size=20&page=1');
+      final response = await apiClient.publicDio.get('/book/?size=20&page=1');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -36,7 +34,7 @@ class BookRepository {
 
   Future<Book> getBookDetail(int id) async {
     try {
-      final response = await _publicDio.get('/book/$id');
+      final response = await apiClient.publicDio.get('/book/$id');
       if (response.statusCode == 200) {
         final data = response.data;
         if (data is Map<String, dynamic> && data['data'] != null) {
@@ -54,7 +52,7 @@ class BookRepository {
 
   Future<List<Book>> getPopularBooks() async {
     try {
-      final response = await _publicDio.get('/book/popular');
+      final response = await apiClient.publicDio.get('/book/popular');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -79,7 +77,7 @@ class BookRepository {
 
   Future<List<Book>> getSaleOffBooks() async {
     try {
-      final response = await _publicDio.get('/book/sale-off');
+      final response = await apiClient.publicDio.get('/book/sale-off');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -104,7 +102,7 @@ class BookRepository {
 
   Future<List<Book>> getBestSellingBooksInYear() async {
     try {
-      final response = await _publicDio.get('/book/top-selling');
+      final response = await apiClient.publicDio.get('/book/top-selling');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -129,7 +127,7 @@ class BookRepository {
 
   Future<List<Book>> getBannerBooks() async {
     try {
-      final response = await _publicDio.get('/book/banner');
+      final response = await apiClient.publicDio.get('/book/banner');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -154,7 +152,7 @@ class BookRepository {
 
   Future<List<Book>> searchBooks(String query) async {
     try {
-      final response = await _publicDio.get('/book/search/$query');
+      final response = await apiClient.publicDio.get('/book/search/$query');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -179,7 +177,9 @@ class BookRepository {
 
   Future<List<Book>> getBooksByCategory(int categoryId) async {
     try {
-      final response = await _publicDio.get('/book/category/$categoryId');
+      final response = await apiClient.publicDio.get(
+        '/book/category/$categoryId',
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;

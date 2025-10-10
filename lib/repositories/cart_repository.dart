@@ -1,18 +1,15 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:heaven_book_app/model/cart.dart';
+import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 
 class CartRepository {
-  final AuthService _authService;
-  CartRepository(this._authService);
-
-  //Dio get _publicDio => _authService.publicDio;
-  Dio get _privateDio => _authService.privateDio;
+  final apiClient = ApiClient(FlutterSecureStorage(), AuthService());
 
   Future<Cart> getMyCart() async {
     try {
-      final response = await _privateDio.get('/cart/my-cart');
+      final response = await apiClient.privateDio.get('/cart/my-cart');
 
       if (response.statusCode == 200) {
         final body = response.data;
@@ -34,7 +31,7 @@ class CartRepository {
 
   Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
     try {
-      final response = await _privateDio.put(
+      final response = await apiClient.privateDio.put(
         '/cart/update/$cartItemId',
         data: {'quantity': newQuantity},
       );
@@ -47,6 +44,24 @@ class CartRepository {
     } catch (e) {
       debugPrint('Error in updateCartItemQuantity: $e');
       throw Exception('Error updating cart item: $e');
+    }
+  }
+
+  Future<void> addToCart(int bookId, int quantity) async {
+    try {
+      final response = await apiClient.privateDio.post(
+        '/cart/add',
+        data: {'bookId': bookId, 'quantity': quantity, 'cartId': null},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to add to cart (status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in addToCart: $e');
+      throw Exception('Error adding to cart: $e');
     }
   }
 }

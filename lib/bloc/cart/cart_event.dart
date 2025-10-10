@@ -13,3 +13,13 @@ class UpdateCartItemQuantity extends CartEvent {
 
   UpdateCartItemQuantity(this.cartItemId, this.newQuantity);
 }
+
+class AddToCart extends CartEvent {
+  final int bookId;
+  final int quantity;
+
+  AddToCart({required this.bookId, this.quantity = 1});
+
+  @override
+  List<Object?> get props => [bookId, quantity];
+}
