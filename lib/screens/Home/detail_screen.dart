@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/book/book_state.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/book_section_widget.dart';
 
@@ -974,7 +976,22 @@ class _DetailScreenState extends State<DetailScreen>
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  final state = context.read<BookBloc>().state;
+                  if (state is BookDetailLoaded) {
+                    final book = state.book;
+                    context.read<CartBloc>().add(
+                      AddToCart(bookId: book.id, quantity: quantity),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${book.title} added to cart!'),
+                        duration: const Duration(seconds: 2),
+                        backgroundColor: AppColors.primaryDark,
+                      ),
+                    );
+                  }
+                },
                 icon: const Icon(
                   Icons.add_shopping_cart,
                   color: Colors.white,

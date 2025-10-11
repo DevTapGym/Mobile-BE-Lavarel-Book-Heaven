@@ -5,6 +5,7 @@ import 'package:heaven_book_app/services/api_client.dart';
 
 class CartRepository {
   final ApiClient apiClient;
+  int? _cartId;
 
   CartRepository(this.apiClient);
 
@@ -17,6 +18,7 @@ class CartRepository {
 
         if (body is Map<String, dynamic> && body['data'] != null) {
           final cartData = Map<String, dynamic>.from(body['data']);
+          _cartId = Cart.fromJson(cartData).id;
           return Cart.fromJson(cartData);
         } else {
           throw Exception('Invalid API response format');
@@ -54,21 +56,54 @@ class CartRepository {
     }
   }
 
-  Future<void> addToCart(int bookId, int quantity) async {
+  Future<String> addToCart(int bookId, int quantity) async {
     try {
+      // Đảm bảo có cartId trước khi add
+      if (_cartId == null) {
+        await getMyCart(); // Lấy cart để có _cartId
+      }
+
       final response = await apiClient.privateDio.post(
         '/cart/add',
-        data: {'bookId': bookId, 'quantity': quantity, 'cartId': null},
+        data: {'book_id': bookId, 'quantity': quantity, 'cart_id': _cartId},
       );
 
-      if (response.statusCode != 200) {
+      if (response.statusCode == 201) {
+        return "Item added to cart successfully";
+      } else {
         throw Exception(
           'Failed to add to cart (status: ${response.statusCode})',
         );
       }
+    } on DioException catch (e) {
+      final errorMessage = e.response?.data['message'] ?? e.message;
+      debugPrint('DioException in addToCart: $errorMessage');
+      throw Exception('Failed to add to cart: $errorMessage');
     } catch (e) {
       debugPrint('Error in addToCart: $e');
       throw Exception('Error adding to cart: $e');
+    }
+  }
+
+  Future<String> removeCartItem(int cartItemId) async {
+    try {
+      final response = await apiClient.privateDio.delete(
+        '/cart/remove/$cartItemId',
+      );
+
+      if (response.statusCode == 200) {
+        return "Item removed from cart successfully";
+      } else {
+        throw Exception(
+          'Failed to remove cart item (status: ${response.statusCode})',
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('DioException in removeCartItem: $e');
+      rethrow;
+    } catch (e) {
+      debugPrint('Error in removeCartItem: $e');
+      throw Exception('Error removing cart item: $e');
     }
   }
 }

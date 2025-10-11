@@ -8,7 +8,6 @@ import 'package:heaven_book_app/model/cart_item.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/custom_circle_checkbox.dart';
-import 'package:intl/intl.dart'; // Thêm import cho intl
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -19,108 +18,28 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   // Định dạng số với dấu chấm ngăn cách 3 số
-  final NumberFormat _currencyFormat = NumberFormat('#,##0', 'vi_VN');
   bool isEditMode = false;
 
-  // Sample data for cart items
-  final List<Map<String, dynamic>> cartItems = [
-    {
-      'title': 'The Little Prince',
-      'author': 'Antoine de Saint-Exupéry',
-      'price': 120000,
-      'originalPrice': 140000,
-      'discount': '10%',
-      'inStock': 23,
-      'isSelected': false,
-      'quantity': 1,
-    },
-    {
-      'title': 'Hooked',
-      'author': 'Nir Eyal',
-      'price': 225000,
-      'originalPrice': 250000,
-      'discount': '10%',
-      'inStock': 13,
-      'isSelected': false,
-      'quantity': 1,
-    },
-  ];
-
-  // Sample data for recommended items
-  final List<Map<String, dynamic>> recommendedItems = [
-    {
-      'title': 'Harry Potter',
-      'author': 'J.K. Rowling',
-      'price': 225000,
-      'originalPrice': 250000,
-      'discount': '-10%',
-      'rating': 4.8,
-      'sold': 120,
-    },
-    {
-      'title': 'Tứ Trí Đăng Giai Rắc Nhiêu',
-      'author': 'Nguyễn Nhật Ánh',
-      'price': 225000,
-      'originalPrice': 250000,
-      'discount': '-10%',
-      'rating': 4.5,
-      'sold': 56,
-    },
-    {
-      'title': 'Dune',
-      'author': 'Frank Herbert',
-      'price': 180000,
-      'originalPrice': 210000,
-      'discount': '-15%',
-      'rating': 4.7,
-      'sold': 80,
-    },
-    {
-      'title': 'The Great Gatsby',
-      'author': 'F. Scott Fitzgerald',
-      'price': 150000,
-      'originalPrice': 170000,
-      'discount': '-12%',
-      'rating': 4.6,
-      'sold': 42,
-    },
-    {
-      'title': 'Atomic Habits',
-      'author': 'James Clear',
-      'price': 200000,
-      'originalPrice': 230000,
-      'discount': '-13%',
-      'rating': 4.9,
-      'sold': 200,
-    },
-    {
-      'title': 'Clean Code',
-      'author': 'Robert C. Martin',
-      'price': 300000,
-      'originalPrice': 350000,
-      'discount': '-14%',
-      'rating': 4.8,
-      'sold': 150,
-    },
-  ];
-
   // Calculate total price of selected items
-  double _calculateTotalPrice() {
+  double _calculateTotalPrice(List<CartItem> cartItems) {
     return cartItems.fold<double>(0, (sum, item) {
-      if (item['isSelected'] == true) {
-        return sum + (item['price'] as num) * (item['quantity'] as num);
+      if (item.isSelected) {
+        // Tính giá sau khi giảm giá
+        final discountedPrice =
+            item.unitPrice - (item.unitPrice * item.sale / 100);
+        return sum + (discountedPrice * item.quantity);
       }
       return sum;
     });
   }
 
   // Calculate total savings
-  double _calculateTotalSavings() {
+  double _calculateTotalSavings(List<CartItem> cartItems) {
     return cartItems.fold<double>(0, (sum, item) {
-      if (item['isSelected'] == true) {
-        return sum +
-            ((item['originalPrice'] as num) - (item['price'] as num)) *
-                (item['quantity'] as num);
+      if (item.isSelected) {
+        // Tính tiền tiết kiệm được từ sale
+        final savings = (item.unitPrice * item.sale / 100) * item.quantity;
+        return sum + savings;
       }
       return sum;
     });
@@ -130,14 +49,46 @@ class _CartScreenState extends State<CartScreen> {
     //final selectedItems = cartItems.where((item) => item['isSelected'] == true).toList();
   }
 
-  void _removeSelectedItems() {
-    setState(() {
-      cartItems.removeWhere((item) => item['isSelected'] == true);
-    });
+  Future<void> _removeSelectedItems(List<CartItem> cartItems) async {
+    final selectedItems = cartItems.where((item) => item.isSelected).toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No items selected to remove'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+      return;
+    } else {
+      for (var item in selectedItems) {
+        context.read<CartBloc>().add(RemoveCartItem(item.id));
+        await Future.delayed(Duration(milliseconds: 1000));
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selected items removed from cart'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+
+      setState(() {
+        isEditMode = false;
+      });
+    }
   }
 
   // Show total price popup using BottomSheet
-  void _showTotalPricePopup(BuildContext context) {
+  void _showTotalPricePopup(BuildContext context, List<CartItem> cartItems) {
+    final selectedItems = cartItems.where((item) => item.isSelected).toList();
+    final subtotal = _calculateTotalPrice(cartItems);
+    final totalSavings = _calculateTotalSavings(cartItems);
+    final shipping = 30000.0; // Fixed shipping cost
+    final finalAmount = subtotal + shipping;
+
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -176,59 +127,91 @@ class _CartScreenState extends State<CartScreen> {
               // Subtitle
               Center(
                 child: Text(
-                  'Please review your order before checkout',
+                  'Please review your order before checkout (${selectedItems.length} items)',
                   style: TextStyle(fontSize: 15, color: Colors.black54),
                 ),
               ),
               SizedBox(height: 18),
-              // Order summary details
-              _buildSummaryRow('Subtotal', '510.000 đ'),
-              _buildSummaryRow('Shipping', '30.000 đ'),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: Text(
-                  'Discounts:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.black70,
-                    fontWeight: FontWeight.w700,
+
+              // Order summary details với dữ liệu thật
+              _buildSummaryRow('Subtotal', FormatPrice.formatPrice(subtotal)),
+              _buildSummaryRow('Shipping', FormatPrice.formatPrice(shipping)),
+
+              // Hiển thị discounts nếu có savings
+              if (totalSavings > 0) ...[
+                SizedBox(height: 8),
+                Padding(
+                  padding: EdgeInsets.only(left: 12),
+                  child: Text(
+                    'Discounts:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.black70,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
+                SizedBox(height: 4),
+                Padding(
+                  padding: EdgeInsets.only(left: 12),
+                  child: _buildSummaryRow(
+                    '• Product Discount',
+                    '-${FormatPrice.formatPrice(totalSavings)}',
+                  ),
+                ),
+                SizedBox(height: 8),
+                Divider(),
+                _buildSummaryRow(
+                  'Total Discounts',
+                  '-${FormatPrice.formatPrice(totalSavings)}',
+                  isBold: true,
+                ),
+              ],
+
+              // Final amount
+              _buildSummaryRow(
+                'Final amount',
+                FormatPrice.formatPrice(finalAmount),
+                isBold: true,
               ),
-              SizedBox(height: 4),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: _buildSummaryRow('• Product Voucher', '-30.000 đ'),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: _buildSummaryRow('• Shipping Voucher', '-30.000 đ'),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: _buildSummaryRow('• Member Discount', '-20.000 đ'),
-              ),
-              Divider(),
-              _buildSummaryRow('Total Discounts', '-80.000 đ', isBold: true),
-              _buildSummaryRow('Final amount', '460.000 đ', isBold: true),
               SizedBox(height: 18),
+
               // Checkout button
               Container(
                 margin: EdgeInsets.only(bottom: 32),
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Handle checkout
-                  },
+                  onPressed:
+                      selectedItems.isNotEmpty
+                          ? () {
+                            Navigator.of(context).pop();
+                            Navigator.pushNamed(
+                              context,
+                              '/check-out',
+                              arguments: {
+                                'selectedItems': selectedItems,
+                                'subtotal': subtotal,
+                                'shipping': shipping,
+                                'totalSavings': totalSavings,
+                                'finalAmount': finalAmount,
+                              },
+                            );
+                          }
+                          : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryDark,
+                    backgroundColor:
+                        selectedItems.isNotEmpty
+                            ? AppColors.primaryDark
+                            : AppColors.primaryDark.withAlpha(125),
                     padding: EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: Text(
-                    'Check out',
+                    selectedItems.isNotEmpty
+                        ? 'Check out (${selectedItems.length} items)'
+                        : 'Select items to checkout',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -332,174 +315,198 @@ class _CartScreenState extends State<CartScreen> {
 
   // Widget for the bottom navigation bar
   Widget _buildBottomNavigationBar() {
-    final hasSelected = cartItems.any((item) => item['isSelected'] == true);
-    return Container(
-      width: double.infinity,
-      height: 100,
-      padding: EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Row(
-            children: [
-              CustomCircleCheckbox(
-                value: cartItems.every((item) => item['isSelected'] == true),
-                onChanged: (value) {
-                  setState(() {
-                    for (var item in cartItems) {
-                      item['isSelected'] = value;
-                    }
-                  });
-                },
-              ),
-              SizedBox(width: 8),
-              Text(
-                'All',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is! CartLoaded) {
+          return const SizedBox.shrink();
+        }
+
+        final cartItems = state.cart.items;
+        final hasSelected = cartItems.any((item) => item.isSelected);
+
+        return Container(
+          width: double.infinity,
+          height: 100,
+          padding: EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 8,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
-          Spacer(),
-          if (!isEditMode) ...[
-            GestureDetector(
-              onTap: hasSelected ? () => _showTotalPricePopup(context) : null,
-              child: Opacity(
-                opacity: hasSelected ? 1.0 : 0.5,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
+          child: Row(
+            children: [
+              Row(
+                children: [
+                  CustomCircleCheckbox(
+                    value: cartItems.every((item) => item.isSelected),
+                    onChanged: (value) {
+                      setState(() {
+                        for (var item in cartItems) {
+                          item.isSelected = value!;
+                        }
+                      });
+                    },
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'All',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Spacer(),
+              if (!isEditMode) ...[
+                GestureDetector(
+                  onTap:
+                      hasSelected
+                          ? () => _showTotalPricePopup(context, cartItems)
+                          : null, // ← Truyền cartItems
+                  child: Opacity(
+                    opacity: hasSelected ? 1.0 : 0.5,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          '${_currencyFormat.format(_calculateTotalPrice())} đ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              FormatPrice.formatPrice(
+                                _calculateTotalPrice(cartItems),
+                              ), // ← Truyền cartItems
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.primaryDark,
+                            ),
+                          ],
                         ),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.primaryDark,
+                        Text(
+                          'Save ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                       ],
                     ),
-                    Text(
-                      'Save ${_currencyFormat.format(_calculateTotalSavings())} đ',
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ),
+                Spacer(),
+                Container(
+                  width: 140,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDark,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      if (hasSelected) {
+                        Navigator.pushNamed(context, '/check-out');
+                      }
+                    },
+                    child: Text(
+                      'Check out (${state.cart.totalItems})',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            Spacer(),
-            Container(
-              width: 140,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primaryDark,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextButton(
-                onPressed: () {
-                  if (hasSelected) {
-                    Navigator.pushNamed(context, '/check-out');
-                  }
-                },
-                child: Text(
-                  'Check out (${cartItems.where((item) => item['isSelected'] == true).length})',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ),
-          ] else ...[
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-              decoration: BoxDecoration(
-                color:
-                    hasSelected
-                        ? AppColors.primaryDark
-                        : AppColors.primaryDark.withAlpha(125),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
-                  ),
-                ],
-              ),
-              child: TextButton(
-                onPressed: hasSelected ? _addToWishlist : null,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
+              ] else ...[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  decoration: BoxDecoration(
+                    color:
+                        hasSelected
+                            ? AppColors.primaryDark
+                            : AppColors.primaryDark.withAlpha(125),
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
                   ),
-                  disabledForegroundColor: Colors.white70,
-                ),
-                child: Text(
-                  'Add to Wish List',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            SizedBox(width: 8),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-              decoration: BoxDecoration(
-                color:
-                    hasSelected
-                        ? AppColors.discountRed
-                        : AppColors.discountRed.withAlpha(125),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
+                  child: TextButton(
+                    onPressed: hasSelected ? _addToWishlist : null,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      disabledForegroundColor: Colors.white70,
+                    ),
+                    child: Text(
+                      'Add to Wish List',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ],
-              ),
-              child: TextButton(
-                onPressed: hasSelected ? _removeSelectedItems : null,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
+                ),
+                SizedBox(width: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  decoration: BoxDecoration(
+                    color:
+                        hasSelected
+                            ? AppColors.discountRed
+                            : AppColors.discountRed.withAlpha(125),
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
                   ),
-                  disabledForegroundColor: Colors.white70,
+                  child: TextButton(
+                    onPressed:
+                        hasSelected
+                            ? () => _removeSelectedItems(cartItems)
+                            : null, // ← Truyền cartItems
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      disabledForegroundColor: Colors.white70,
+                    ),
+                    child: Text(
+                      'Remove',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  'Remove',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -654,7 +661,10 @@ class _CartScreenState extends State<CartScreen> {
                           style: TextStyle(color: Colors.black54, fontSize: 15),
                         ),
                         Text(
-                          FormatPrice.formatPrice(items.unitPrice),
+                          FormatPrice.formatPrice(
+                            items.unitPrice -
+                                (items.unitPrice * items.sale / 100),
+                          ),
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
@@ -814,7 +824,14 @@ class _CartScreenState extends State<CartScreen> {
               child: IconButton(
                 icon: Icon(Icons.delete, color: Colors.white, size: 38),
                 onPressed: () {
-                  // Handle item removal
+                  context.read<CartBloc>().add(RemoveCartItem(items.id));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Item removed from cart'),
+                      duration: Duration(seconds: 2),
+                      backgroundColor: AppColors.primaryDark,
+                    ),
+                  );
                 },
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(),
@@ -1034,7 +1051,9 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      FormatPrice.formatPrice(book.price),
+                      FormatPrice.formatPrice(
+                        book.price - (book.price * book.saleOff / 100),
+                      ),
                       style: TextStyle(
                         color: AppColors.primaryDark,
                         fontSize: 18,

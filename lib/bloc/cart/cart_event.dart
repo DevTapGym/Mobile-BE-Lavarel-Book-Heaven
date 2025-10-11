@@ -23,3 +23,12 @@ class AddToCart extends CartEvent {
   @override
   List<Object?> get props => [bookId, quantity];
 }
+
+class RemoveCartItem extends CartEvent {
+  final int cartItemId;
+
+  RemoveCartItem(this.cartItemId);
+
+  @override
+  List<Object?> get props => [cartItemId];
+}
