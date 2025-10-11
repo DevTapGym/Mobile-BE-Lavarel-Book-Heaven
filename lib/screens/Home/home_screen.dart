@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/book/book_state.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/category/category_bloc.dart';
 import 'package:heaven_book_app/bloc/category/category_event.dart';
 import 'package:heaven_book_app/bloc/category/category_state.dart';
@@ -32,24 +34,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
     // Set up timer for auto-scrolling every 3 seconds
-    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-      if (_currentPage < 3) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-      _bannerController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+        if (_bannerController.hasClients) {
+          if (_currentPage < 3) {
+            _currentPage++;
+          } else {
+            _currentPage = 0;
+          }
+          _bannerController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     });
 
-    // Load popular books
+    // Load dữ liệu
     context.read<BookBloc>().add(LoadBooks());
-
-    // Load categories using the shared _categoryBloc
     _categoryBloc.add(LoadCategories());
   }
 
@@ -154,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(
                                   context,
                                   '/detail',
-                                  arguments: book,
+                                  arguments: {'bookId': book.id},
                                 );
                               },
                             );
@@ -184,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(
                                   context,
                                   '/detail',
-                                  arguments: book,
+                                  arguments: {'bookId': book.id},
                                 );
                               },
                             );
@@ -376,6 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.indigoAccent, Colors.indigo],
               ),
               'color': Colors.indigo,
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[0].id : null,
               'books':
                   bannerBooks.isNotEmpty
                       ? 'http://10.0.2.2:8000${bannerBooks[0].thumbnail}'
@@ -391,6 +397,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.purple, Colors.deepPurple],
               ),
               'color': Colors.deepPurple,
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[1].id : null,
               'books':
                   bannerBooks.length > 1
                       ? 'http://10.0.2.2:8000${bannerBooks[1].thumbnail}'
@@ -409,6 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               'color': Color.fromARGB(255, 0, 150, 45),
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[2].id : null,
               'books':
                   bannerBooks.length > 2
                       ? 'http://10.0.2.2:8000${bannerBooks[2].thumbnail}'
@@ -424,6 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 colors: [Colors.orange, Colors.deepOrange],
               ),
               'color': Colors.deepOrange,
+              'book_id': bannerBooks.isNotEmpty ? bannerBooks[3].id : null,
               'books':
                   bannerBooks.length > 3
                       ? 'http://10.0.2.2:8000${bannerBooks[3].thumbnail}'
@@ -512,7 +521,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(height: 12),
                                     ElevatedButton(
                                       onPressed: () {
-                                        // Navigate to relevant section
+                                        if (banner['book_id'] == null) return;
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/detail',
+                                          arguments: {
+                                            'bookId': banner['book_id'],
+                                          },
+                                        );
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
@@ -1142,7 +1158,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/detail', arguments: book);
+        Navigator.pushNamed(context, '/detail', arguments: {'bookId': book.id});
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -1413,13 +1429,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             GestureDetector(
                               onTap: () {
-                                // Add to cart action - prevent navigation
+                                context.read<CartBloc>().add(
+                                  AddToCart(bookId: book.id, quantity: 1),
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       '${book.title} added to cart!',
                                     ),
-                                    backgroundColor: AppColors.primary,
+                                    backgroundColor: AppColors.primaryDark,
                                   ),
                                 );
                               },

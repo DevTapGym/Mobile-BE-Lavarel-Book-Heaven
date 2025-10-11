@@ -431,7 +431,7 @@ class _ResetScreenState extends State<ResetScreen> {
                                   }
 
                                   // Use bloc to reset password
-                                  BlocProvider.of<AuthBloc>(context).add(
+                                  context.read<AuthBloc>().add(
                                     ResetPasswordRequested(
                                       email: widget.email,
                                       code: otp,

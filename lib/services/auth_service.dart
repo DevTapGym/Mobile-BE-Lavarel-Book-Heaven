@@ -1,63 +1,194 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:heaven_book_app/services/api_client.dart';
 
 class AuthService {
-  late final Dio _publicDio;
-  late final Dio _privateDio;
-  late final CookieJar _cookieJar;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  //10.0.2.2
-  //192.168.10.89
+  late final ApiClient apiClient;
+
+  final StreamController<void> _onTokenExpiredController =
+      StreamController.broadcast();
+  Stream<void> get onTokenExpired => _onTokenExpiredController.stream;
+
   AuthService() {
-    _cookieJar = CookieJar();
+    apiClient = ApiClient(_secureStorage, this);
+  }
 
-    _publicDio = Dio(
-      BaseOptions(
-        baseUrl: 'http://10.0.2.2:8000/api/v1/auth',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
+  // ==================== LOGIN ====================
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    try {
+      final response = await apiClient.publicDio.post(
+        '/auth/login',
+        data: {"email": email, "password": password},
+      );
 
-    _privateDio = Dio(
-      BaseOptions(
-        baseUrl: 'http://10.0.2.2:8000/api/v1/auth',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        final data = response.data['data'];
 
-    _publicDio.interceptors.add(CookieManager(_cookieJar));
-    _privateDio.interceptors.add(CookieManager(_cookieJar));
+        // Lưu access token
+        await _secureStorage.write(
+          key: 'access_token',
+          value: data['access_token'],
+        );
 
-    _privateDio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await _secureStorage.read(key: 'access_token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          } else {
-            throw DioException(
-              requestOptions: options,
-              error: 'No authentication token found',
-              type: DioExceptionType.badResponse,
+        // Lưu refresh token từ header (Set-Cookie)
+        final setCookieHeader = response.headers['set-cookie'];
+        if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
+          final refreshCookie = setCookieHeader
+              .map((str) => Cookie.fromSetCookieValue(str))
+              .firstWhere(
+                (c) => c.name == 'refresh_token',
+                orElse: () => Cookie('refresh_token', ''),
+              );
+
+          if (refreshCookie.value.isNotEmpty) {
+            await _secureStorage.write(
+              key: 'refresh_token',
+              value: refreshCookie.value,
             );
+            debugPrint('Refresh token đã lưu trong SecureStorage');
+          } else {
+            throw Exception('Không tìm thấy refresh_token trong header');
           }
-          handler.next(options);
-        },
-        onError: (error, handler) {
-          if (error.response?.statusCode == 401) {
-            _handleTokenExpired();
+        }
+
+        // Lưu trạng thái user
+        final userData = data['user'] ?? data['account'] ?? {};
+        final isActiveValue = userData['is_active'] ?? 0;
+        await _secureStorage.write(
+          key: 'is_active',
+          value: isActiveValue.toString(),
+        );
+
+        final isActive = userData['is_active'] == 1;
+        return {
+          'token': data['access_token'],
+          'user': userData,
+          'isActive': isActive,
+        };
+      } else {
+        throw Exception(response.data['message'] ?? 'Đăng nhập thất bại');
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        throw Exception(e.response?.data['message'] ?? 'Đăng nhập thất bại');
+      }
+      throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
+    }
+  }
+
+  Future<String?> getRefreshToken() async {
+    return await _secureStorage.read(key: 'refresh_token');
+  }
+
+  Future<Map<String, dynamic>> refreshToken() async {
+    try {
+      final refreshToken = await getRefreshToken();
+
+      if (refreshToken == null || refreshToken.isEmpty) {
+        throw Exception('Không tìm thấy refresh token trong SecureStorage');
+      }
+
+      final response = await apiClient.publicDio.post(
+        '/auth/refresh',
+        options: Options(headers: {'Cookie': 'refresh_token=$refreshToken'}),
+      );
+
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        final data = response.data['data'];
+        final newAccessToken = data['access_token'];
+
+        await _secureStorage.write(key: 'access_token', value: newAccessToken);
+        debugPrint('✅ Access token đã được làm mới và lưu');
+        final token = await _secureStorage.read(key: 'access_token');
+        debugPrint('🔑 [InitScreen] New access token: $token');
+
+        final setCookieHeader = response.headers['set-cookie'];
+        if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
+          final newRefresh = setCookieHeader
+              .map((str) => Cookie.fromSetCookieValue(str))
+              .firstWhere(
+                (c) => c.name == 'refresh_token',
+                orElse: () => Cookie('refresh_token', ''),
+              );
+
+          if (newRefresh.value.isNotEmpty) {
+            await _secureStorage.write(
+              key: 'refresh_token',
+              value: newRefresh.value,
+            );
+            debugPrint('✅ Refresh token mới đã lưu');
+            final refresh = await _secureStorage.read(key: 'refresh_token');
+            debugPrint('🔑 [InitScreen] New refresh token: $refresh');
           }
-          handler.next(error);
-        },
-      ),
+        }
+
+        return {
+          'token': newAccessToken,
+          'user': data['user'] ?? {},
+          'isActive': (data['user']?['is_active'] ?? 0) == 1,
+          'success': true,
+        };
+      } else {
+        throw Exception('Làm mới token thất bại');
+      }
+    } catch (e) {
+      debugPrint('❌ Refresh token error: $e');
+      throw Exception('Không thể làm mới token, vui lòng đăng nhập lại.');
+    }
+  }
+
+  // ==================== XỬ LÝ HẾT HẠN TOKEN ====================
+  Future<void> handleTokenExpired() async {
+    await _secureStorage.deleteAll();
+    debugPrint('❌ Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.');
+    _onTokenExpiredController.add(null);
+  }
+
+  // ==================== DỌN DẸP ====================
+  Future<void> _cleanupLocalData() async {
+    await _secureStorage.deleteAll();
+    debugPrint(
+      '🧹 [AuthService] Đã xóa access token + refresh token + user data',
     );
+  }
+
+  // ==================== LOGOUT ====================
+  Future<Map<String, dynamic>> logout() async {
+    try {
+      final response = await apiClient.privateDio.post('/auth/logout');
+
+      if (response.statusCode == 200) {
+        await _cleanupLocalData();
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Đăng xuất thành công',
+          'data': response.data['data'],
+        };
+      } else {
+        await _cleanupLocalData();
+        throw Exception(
+          response.data['message'] ?? 'Đăng xuất không thành công',
+        );
+      }
+    } on DioException catch (e) {
+      await _cleanupLocalData();
+      if (e.response != null && e.response?.data != null) {
+        throw Exception(e.response?.data['message'] ?? 'Lỗi khi đăng xuất');
+      }
+      return {
+        'success': true,
+        'message': 'Đăng xuất thành công (offline)',
+        'data': null,
+      };
+    } catch (e) {
+      await _cleanupLocalData();
+      return {'success': true, 'message': 'Đăng xuất thành công', 'data': null};
+    }
   }
 
   Future<Map<String, dynamic>> register({
@@ -67,8 +198,8 @@ class AuthService {
     required String passwordConfirmation,
   }) async {
     try {
-      final response = await _publicDio.post(
-        '/register',
+      final response = await apiClient.publicDio.post(
+        '/auth/register',
         data: {
           "name": name,
           "email": email,
@@ -99,156 +230,9 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    try {
-      final response = await _publicDio.post(
-        '/login',
-        data: {"email": email, "password": password},
-      );
-
-      if (response.statusCode == 200 && response.data['data'] != null) {
-        final data = response.data['data'];
-
-        // Lưu access token
-        await _secureStorage.write(
-          key: 'access_token',
-          value: data['access_token'],
-        );
-
-        // Lấy refresh token từ header (Set-Cookie)
-        final setCookieHeader = response.headers['set-cookie'];
-
-        if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
-          final cookies =
-              setCookieHeader
-                  .map((str) => Cookie.fromSetCookieValue(str))
-                  .where((c) => c.name == 'refresh_token')
-                  .toList();
-
-          if (cookies.isNotEmpty) {
-            final uri = Uri.parse(_publicDio.options.baseUrl);
-            await _cookieJar.saveFromResponse(uri, cookies);
-            debugPrint('✅ Refresh token đã được lưu thành công');
-          } else {
-            throw Exception('Không tìm thấy refresh_token trong header');
-          }
-        }
-
-        // Lưu trạng thái user
-        final userData = data['user'] ?? data['account'] ?? {};
-        final isActiveValue = userData['is_active'] ?? 0;
-
-        // Lưu is_active từ user object
-        await _secureStorage.write(
-          key: 'is_active',
-          value: isActiveValue.toString(),
-        );
-
-        // Check xem đã lưu thành công chưa
-        final savedIsActive = await _secureStorage.read(key: 'is_active');
-        debugPrint(
-          '🔍 [Login Check] Is Active đã lưu: ${savedIsActive != null ? "✅ Có ($savedIsActive)" : "❌ Không"}',
-        );
-
-        final isActive = userData['is_active'] == 1;
-
-        return {
-          'token': data['access_token'],
-          'user': userData,
-          'isActive': isActive,
-        };
-      } else {
-        throw Exception(response.data['message'] ?? 'Đăng nhập thất bại');
-      }
-    } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Đăng nhập thất bại');
-      }
-      throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
-    }
-  }
-
-  Future<String?> getRefreshToken() async {
-    final uri = Uri.parse(_publicDio.options.baseUrl);
-    final cookies = await _cookieJar.loadForRequest(uri);
-    final refresh = cookies.firstWhere(
-      (cookie) => cookie.name == 'refresh_token',
-      orElse: () => Cookie('refresh_token', ''),
-    );
-    return refresh.value.isNotEmpty ? refresh.value : null;
-  }
-
-  Future<Map<String, dynamic>> refreshToken() async {
-    try {
-      // 1️⃣ Lấy refresh token từ cookie
-      final oldToken = await getRefreshToken();
-      if (oldToken == null || oldToken.isEmpty) {
-        throw Exception('Không tìm thấy refresh token trong cookie');
-      }
-
-      // 2️⃣ Gọi API refresh, truyền refresh token qua Cookie
-      final response = await _publicDio.post(
-        '/refresh',
-        options: Options(headers: {'Cookie': 'refresh_token=$oldToken'}),
-      );
-
-      if (response.statusCode == 200 && response.data['data'] != null) {
-        final data = response.data['data'];
-
-        // 3️⃣ Lưu access token mới
-        await _secureStorage.write(
-          key: 'access_token',
-          value: data['access_token'],
-        );
-
-        // 4️⃣ Xóa refresh token cũ trong cookie
-        final uri = Uri.parse(_publicDio.options.baseUrl);
-        await _cookieJar.delete(uri, true);
-
-        // 5️⃣ Lấy refresh token mới từ response header (Set-Cookie)
-        final setCookieHeader = response.headers['set-cookie'];
-        if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
-          final cookies =
-              setCookieHeader
-                  .map((str) => Cookie.fromSetCookieValue(str))
-                  .where((c) => c.name == 'refresh_token')
-                  .toList();
-
-          if (cookies.isNotEmpty) {
-            await _cookieJar.saveFromResponse(uri, cookies);
-            debugPrint('✅ Refresh token mới đã được lưu thành công');
-          } else {
-            throw Exception('Server không trả về refresh token mới');
-          }
-        } else {
-          throw Exception('Server không trả về cookie mới');
-        }
-
-        // 6️⃣ Lưu trạng thái user và trả về dữ liệu giống login
-        final userData = data['user'] ?? {};
-        final isActive = userData['is_active'] == 1;
-
-        return {
-          'token': data['access_token'],
-          'user': userData,
-          'isActive': isActive,
-        };
-      } else {
-        throw Exception(response.data['message'] ?? 'Làm mới token thất bại');
-      }
-    } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        throw Exception(
-          e.response?.data['message'] ?? 'Làm mới token thất bại',
-        );
-      }
-      throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
-    }
-  }
-
   Future<Map<String, dynamic>> sendActivationCode() async {
     try {
-      final response = await _privateDio.post('/send-code');
+      final response = await apiClient.privateDio.post('/auth/send-code');
 
       if (response.statusCode == 200) {
         return {
@@ -273,8 +257,8 @@ class AuthService {
 
   Future<Map<String, dynamic>> verifyActivationCode(String code) async {
     try {
-      final response = await _privateDio.post(
-        '/verify-code',
+      final response = await apiClient.privateDio.post(
+        '/auth/verify-code',
         data: {'code': code},
       );
 
@@ -302,63 +286,10 @@ class AuthService {
     }
   }
 
-  Future<void> _handleTokenExpired() async {
-    await _secureStorage.deleteAll();
-    // ignore: avoid_debugPrint
-    debugPrint('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-  }
-
-  Future<Map<String, dynamic>> logout() async {
-    try {
-      final response = await _privateDio.post('/logout');
-
-      if (response.statusCode == 200) {
-        await _secureStorage.deleteAll();
-        final uri = Uri.parse(_publicDio.options.baseUrl);
-        await _cookieJar.delete(uri, true);
-        return {
-          'success': true,
-          'message': response.data['message'] ?? 'Đăng xuất thành công',
-          'data': response.data['data'],
-        };
-      } else {
-        await _cleanupLocalData();
-        throw Exception(
-          response.data['message'] ?? 'Đăng xuất không thành công',
-        );
-      }
-    } on DioException catch (e) {
-      await _cleanupLocalData();
-
-      if (e.response != null && e.response?.data != null) {
-        throw Exception(e.response?.data['message'] ?? 'Lỗi khi đăng xuất');
-      }
-      return {
-        'success': true,
-        'message': 'Đăng xuất thành công (offline)',
-        'data': null,
-      };
-    } catch (e) {
-      await _cleanupLocalData();
-      return {'success': true, 'message': 'Đăng xuất thành công', 'data': null};
-    }
-  }
-
-  Future<void> _cleanupLocalData() async {
-    await _secureStorage.deleteAll();
-
-    final uri = Uri.parse(_publicDio.options.baseUrl);
-    await _cookieJar.delete(uri, true);
-
-    debugPrint(
-      '🧹 [AuthService] Hoàn tất cleanup: access token + refresh token + user data',
-    );
-  }
-
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
-      final response = await _publicDio.post(
-        '/forgot-password',
+      final response = await apiClient.publicDio.post(
+        '/auth/forgot-password',
         data: {"email": email},
       );
 
@@ -390,8 +321,8 @@ class AuthService {
     required String newPassword,
   }) async {
     try {
-      final response = await _publicDio.post(
-        '/reset-password',
+      final response = await apiClient.publicDio.post(
+        '/auth/reset-password',
         data: {"email": email, "code": code, "new_password": newPassword},
       );
 
@@ -414,10 +345,5 @@ class AuthService {
       }
       throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
     }
-  }
-
-  void dispose() {
-    _publicDio.close();
-    _privateDio.close();
   }
 }

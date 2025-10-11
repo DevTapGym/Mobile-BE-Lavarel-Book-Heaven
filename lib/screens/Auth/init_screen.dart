@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,8 +6,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../bloc/auth/auth_state.dart';
-import '../../services/auth_service.dart';
-import 'login_screen.dart';
 
 class InitScreen extends StatefulWidget {
   const InitScreen({super.key});
@@ -17,18 +16,11 @@ class InitScreen extends StatefulWidget {
 
 class _InitScreenState extends State<InitScreen> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  late final AuthBloc _authBloc;
 
   @override
   void initState() {
     super.initState();
-    _authBloc = AuthBloc(AuthService());
     _checkAutoLogin();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> _checkAutoLogin() async {
@@ -36,41 +28,31 @@ class _InitScreenState extends State<InitScreen> {
       final accessToken = await _secureStorage.read(key: 'access_token');
       final isActive = await _secureStorage.read(key: 'is_active');
 
-      if (accessToken == null || accessToken.isEmpty) {
-        debugPrint(
-          '❌ [InitScreen] Không tìm thấy access token → Chuyển sang Login',
-        );
+      debugPrint('🔍 [InitScreen] Kiểm tra auto login...');
+      debugPrint('🔍 [InitScreen] Access token exists: ${accessToken != null}');
+      debugPrint('🔍 [InitScreen] Is active: $isActive');
+
+      // Case 1: Không có token hoặc chưa active -> Login
+      if (accessToken == null || accessToken.isEmpty || isActive != '1') {
+        debugPrint('❌ [InitScreen] Không có token hoặc chưa active → Login');
         _navigateToLogin();
         return;
       }
-      if (isActive == null) {
-        debugPrint(
-          '⚠️ [InitScreen] Không tìm thấy is_active → Chuyển sang Login',
-        );
-        _navigateToLogin();
-        return;
-      }
-      if (_isTokenExpired(accessToken)) {
-        debugPrint('⏰ [InitScreen] Token đã hết hạn → Thử refresh token');
-        if (mounted) {
-          await _handleRefreshToken();
-        }
-      }
-      if (isActive == '0') {
-        debugPrint('🎉 [InitScreen] Người dùng chưa xác thực → Login');
-        if (mounted) {
-          _navigateToLogin();
-        }
+
+      // Case 2: Có token và active = '1' -> Kiểm tra expired
+      final isExpired = _isTokenExpired(accessToken);
+      debugPrint('🔍 [InitScreen] Token expired: $isExpired');
+
+      if (isExpired) {
+        // Token hết hạn -> Thử refresh
+        debugPrint('⏰ [InitScreen] Token hết hạn → Thử refresh token');
+        await _handleRefreshToken();
       } else {
-        debugPrint('🎉 [InitScreen] Token còn hạn → Chuyển thẳng vào Main');
-        if (mounted) {
-          _navigateToMain();
-        }
+        debugPrint('✅ [InitScreen] Token còn hạn → Main');
+        _navigateToMain();
       }
     } catch (e) {
-      debugPrint(
-        '🚨 [InitScreen] Lỗi khi kiểm tra auto login: $e → Chuyển sang Login',
-      );
+      debugPrint('🚨 [InitScreen] Lỗi kiểm tra auto login: $e → Login');
       _navigateToLogin();
     }
   }
@@ -79,27 +61,39 @@ class _InitScreenState extends State<InitScreen> {
     try {
       debugPrint('⏳ [InitScreen] Bắt đầu refresh token...');
 
-      // Trigger refresh token và đợi kết quả
-      _authBloc.add(AppStarted());
+      final authBloc = context.read<AuthBloc>();
 
-      // Listen for result one time only
-      await for (final state in _authBloc.stream) {
-        if (state is AuthSuccess) {
-          debugPrint(
-            '🎉 [InitScreen] Refresh token thành công → Chuyển vào Main',
-          );
-          if (mounted) {
-            _navigateToMain();
-          }
-          break;
-        } else if (state is AuthFailure) {
-          debugPrint('❌ [InitScreen] Refresh token thất bại: ${state.message}');
-          if (mounted) {
-            _navigateToLogin();
-          }
-          break;
+      // Dispatch refresh token event
+      authBloc.add(AppStarted());
+
+      // Wait for the next state that's not loading
+      final result = await authBloc.stream
+          .where((state) => state is! AuthLoading)
+          .first
+          .timeout(const Duration(seconds: 30));
+
+      if (result is AuthSuccess) {
+        debugPrint(
+          '🎉 [InitScreen] Refresh token thành công → Chuyển vào Main',
+        );
+        if (mounted) {
+          _navigateToMain();
         }
-        // Ignore AuthLoading, continue listening
+      } else if (result is AuthFailure) {
+        debugPrint('❌ [InitScreen] Refresh token thất bại: ${result.message}');
+        if (mounted) {
+          _navigateToLogin();
+        }
+      } else {
+        debugPrint('⚠️ [InitScreen] Unexpected state: ${result.runtimeType}');
+        if (mounted) {
+          _navigateToLogin();
+        }
+      }
+    } on TimeoutException {
+      debugPrint('⏰ [InitScreen] Refresh token timeout');
+      if (mounted) {
+        _navigateToLogin();
       }
     } catch (e) {
       debugPrint('🚨 [InitScreen] Lỗi refresh token: $e');
@@ -146,15 +140,7 @@ class _InitScreenState extends State<InitScreen> {
 
   void _navigateToLogin() {
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder:
-              (context) => BlocProvider.value(
-                value: _authBloc,
-                child: const LoginScreen(),
-              ),
-        ),
-      );
+      Navigator.pushNamed(context, '/login');
     }
   }
 
@@ -166,21 +152,15 @@ class _InitScreenState extends State<InitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _authBloc,
-      child: const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text(
-                'Đang kiểm tra đăng nhập...',
-                style: TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Đang kiểm tra đăng nhập...', style: TextStyle(fontSize: 16)),
+          ],
         ),
       ),
     );

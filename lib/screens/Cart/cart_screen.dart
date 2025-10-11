@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
+import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/model/book.dart';
+import 'package:heaven_book_app/model/cart_item.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/custom_circle_checkbox.dart';
-import 'package:intl/intl.dart'; // Thêm import cho intl
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -12,108 +18,28 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   // Định dạng số với dấu chấm ngăn cách 3 số
-  final NumberFormat _currencyFormat = NumberFormat('#,##0', 'vi_VN');
   bool isEditMode = false;
 
-  // Sample data for cart items
-  final List<Map<String, dynamic>> cartItems = [
-    {
-      'title': 'The Little Prince',
-      'author': 'Antoine de Saint-Exupéry',
-      'price': 120000,
-      'originalPrice': 140000,
-      'discount': '10%',
-      'inStock': 23,
-      'isSelected': false,
-      'quantity': 1,
-    },
-    {
-      'title': 'Hooked',
-      'author': 'Nir Eyal',
-      'price': 225000,
-      'originalPrice': 250000,
-      'discount': '10%',
-      'inStock': 13,
-      'isSelected': false,
-      'quantity': 1,
-    },
-  ];
-
-  // Sample data for recommended items
-  final List<Map<String, dynamic>> recommendedItems = [
-    {
-      'title': 'Harry Potter',
-      'author': 'J.K. Rowling',
-      'price': 225000,
-      'originalPrice': 250000,
-      'discount': '-10%',
-      'rating': 4.8,
-      'sold': 120,
-    },
-    {
-      'title': 'Tứ Trí Đăng Giai Rắc Nhiêu',
-      'author': 'Nguyễn Nhật Ánh',
-      'price': 225000,
-      'originalPrice': 250000,
-      'discount': '-10%',
-      'rating': 4.5,
-      'sold': 56,
-    },
-    {
-      'title': 'Dune',
-      'author': 'Frank Herbert',
-      'price': 180000,
-      'originalPrice': 210000,
-      'discount': '-15%',
-      'rating': 4.7,
-      'sold': 80,
-    },
-    {
-      'title': 'The Great Gatsby',
-      'author': 'F. Scott Fitzgerald',
-      'price': 150000,
-      'originalPrice': 170000,
-      'discount': '-12%',
-      'rating': 4.6,
-      'sold': 42,
-    },
-    {
-      'title': 'Atomic Habits',
-      'author': 'James Clear',
-      'price': 200000,
-      'originalPrice': 230000,
-      'discount': '-13%',
-      'rating': 4.9,
-      'sold': 200,
-    },
-    {
-      'title': 'Clean Code',
-      'author': 'Robert C. Martin',
-      'price': 300000,
-      'originalPrice': 350000,
-      'discount': '-14%',
-      'rating': 4.8,
-      'sold': 150,
-    },
-  ];
-
   // Calculate total price of selected items
-  double _calculateTotalPrice() {
+  double _calculateTotalPrice(List<CartItem> cartItems) {
     return cartItems.fold<double>(0, (sum, item) {
-      if (item['isSelected'] == true) {
-        return sum + (item['price'] as num) * (item['quantity'] as num);
+      if (item.isSelected) {
+        // Tính giá sau khi giảm giá
+        final discountedPrice =
+            item.unitPrice - (item.unitPrice * item.sale / 100);
+        return sum + (discountedPrice * item.quantity);
       }
       return sum;
     });
   }
 
   // Calculate total savings
-  double _calculateTotalSavings() {
+  double _calculateTotalSavings(List<CartItem> cartItems) {
     return cartItems.fold<double>(0, (sum, item) {
-      if (item['isSelected'] == true) {
-        return sum +
-            ((item['originalPrice'] as num) - (item['price'] as num)) *
-                (item['quantity'] as num);
+      if (item.isSelected) {
+        // Tính tiền tiết kiệm được từ sale
+        final savings = (item.unitPrice * item.sale / 100) * item.quantity;
+        return sum + savings;
       }
       return sum;
     });
@@ -123,14 +49,46 @@ class _CartScreenState extends State<CartScreen> {
     //final selectedItems = cartItems.where((item) => item['isSelected'] == true).toList();
   }
 
-  void _removeSelectedItems() {
-    setState(() {
-      cartItems.removeWhere((item) => item['isSelected'] == true);
-    });
+  Future<void> _removeSelectedItems(List<CartItem> cartItems) async {
+    final selectedItems = cartItems.where((item) => item.isSelected).toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No items selected to remove'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+      return;
+    } else {
+      for (var item in selectedItems) {
+        context.read<CartBloc>().add(RemoveCartItem(item.id));
+        await Future.delayed(Duration(milliseconds: 1000));
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selected items removed from cart'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.primaryDark,
+        ),
+      );
+
+      setState(() {
+        isEditMode = false;
+      });
+    }
   }
 
   // Show total price popup using BottomSheet
-  void _showTotalPricePopup(BuildContext context) {
+  void _showTotalPricePopup(BuildContext context, List<CartItem> cartItems) {
+    final selectedItems = cartItems.where((item) => item.isSelected).toList();
+    final subtotal = _calculateTotalPrice(cartItems);
+    final totalSavings = _calculateTotalSavings(cartItems);
+    final shipping = 30000.0; // Fixed shipping cost
+    final finalAmount = subtotal + shipping;
+
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -169,59 +127,91 @@ class _CartScreenState extends State<CartScreen> {
               // Subtitle
               Center(
                 child: Text(
-                  'Please review your order before checkout',
+                  'Please review your order before checkout (${selectedItems.length} items)',
                   style: TextStyle(fontSize: 15, color: Colors.black54),
                 ),
               ),
               SizedBox(height: 18),
-              // Order summary details
-              _buildSummaryRow('Subtotal', '510.000 đ'),
-              _buildSummaryRow('Shipping', '30.000 đ'),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: Text(
-                  'Discounts:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.black70,
-                    fontWeight: FontWeight.w700,
+
+              // Order summary details với dữ liệu thật
+              _buildSummaryRow('Subtotal', FormatPrice.formatPrice(subtotal)),
+              _buildSummaryRow('Shipping', FormatPrice.formatPrice(shipping)),
+
+              // Hiển thị discounts nếu có savings
+              if (totalSavings > 0) ...[
+                SizedBox(height: 8),
+                Padding(
+                  padding: EdgeInsets.only(left: 12),
+                  child: Text(
+                    'Discounts:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.black70,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
+                SizedBox(height: 4),
+                Padding(
+                  padding: EdgeInsets.only(left: 12),
+                  child: _buildSummaryRow(
+                    '• Product Discount',
+                    '-${FormatPrice.formatPrice(totalSavings)}',
+                  ),
+                ),
+                SizedBox(height: 8),
+                Divider(),
+                _buildSummaryRow(
+                  'Total Discounts',
+                  '-${FormatPrice.formatPrice(totalSavings)}',
+                  isBold: true,
+                ),
+              ],
+
+              // Final amount
+              _buildSummaryRow(
+                'Final amount',
+                FormatPrice.formatPrice(finalAmount),
+                isBold: true,
               ),
-              SizedBox(height: 4),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: _buildSummaryRow('• Product Voucher', '-30.000 đ'),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: _buildSummaryRow('• Shipping Voucher', '-30.000 đ'),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: _buildSummaryRow('• Member Discount', '-20.000 đ'),
-              ),
-              Divider(),
-              _buildSummaryRow('Total Discounts', '-80.000 đ', isBold: true),
-              _buildSummaryRow('Final amount', '460.000 đ', isBold: true),
               SizedBox(height: 18),
+
               // Checkout button
               Container(
                 margin: EdgeInsets.only(bottom: 32),
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Handle checkout
-                  },
+                  onPressed:
+                      selectedItems.isNotEmpty
+                          ? () {
+                            Navigator.of(context).pop();
+                            Navigator.pushNamed(
+                              context,
+                              '/check-out',
+                              arguments: {
+                                'selectedItems': selectedItems,
+                                'subtotal': subtotal,
+                                'shipping': shipping,
+                                'totalSavings': totalSavings,
+                                'finalAmount': finalAmount,
+                              },
+                            );
+                          }
+                          : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryDark,
+                    backgroundColor:
+                        selectedItems.isNotEmpty
+                            ? AppColors.primaryDark
+                            : AppColors.primaryDark.withAlpha(125),
                     padding: EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: Text(
-                    'Check out',
+                    selectedItems.isNotEmpty
+                        ? 'Check out (${selectedItems.length} items)'
+                        : 'Select items to checkout',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -266,234 +256,299 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        backgroundColor: AppColors.primary,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Shopping Cart (${cartItems.length})',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            child: Text(
-              isEditMode ? 'Done' : 'Edit',
-              style: TextStyle(color: AppColors.black70, fontSize: 16),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          return Scaffold(
+            appBar: AppBar(
+              toolbarHeight: 70,
+              backgroundColor: AppColors.primary,
+              automaticallyImplyLeading: false,
+              title: Text(
+                'Shopping Cart (${state.cart.totalItems})',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                TextButton(
+                  child: Text(
+                    isEditMode ? 'Done' : 'Edit',
+                    style: TextStyle(color: AppColors.black70, fontSize: 16),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      isEditMode = !isEditMode;
+                    });
+                  },
+                ),
+              ],
             ),
-            onPressed: () {
-              setState(() {
-                isEditMode = !isEditMode;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(color: AppColors.background),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCartItemsSection(),
-              _buildRecommendedHeader(),
-              _buildRecommendedItemsGrid(),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+            body: Container(
+              height: double.infinity,
+              decoration: BoxDecoration(color: AppColors.background),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCartItemsSection(),
+                    _buildRecommendedHeader(),
+                    _buildRecommendedItemsGrid(),
+                  ],
+                ),
+              ),
+            ),
+            bottomNavigationBar: _buildBottomNavigationBar(),
+          );
+        } else if (state is CartError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   // Widget for the bottom navigation bar
   Widget _buildBottomNavigationBar() {
-    final hasSelected = cartItems.any((item) => item['isSelected'] == true);
-    return Container(
-      width: double.infinity,
-      height: 100,
-      padding: EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Row(
-            children: [
-              CustomCircleCheckbox(
-                value: cartItems.every((item) => item['isSelected'] == true),
-                onChanged: (value) {
-                  setState(() {
-                    for (var item in cartItems) {
-                      item['isSelected'] = value;
-                    }
-                  });
-                },
-              ),
-              SizedBox(width: 8),
-              Text(
-                'All',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is! CartLoaded) {
+          return const SizedBox.shrink();
+        }
+
+        final cartItems = state.cart.items;
+        final hasSelected = cartItems.any((item) => item.isSelected);
+
+        return Container(
+          width: double.infinity,
+          height: 100,
+          padding: EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 8,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
-          Spacer(),
-          if (!isEditMode) ...[
-            GestureDetector(
-              onTap: hasSelected ? () => _showTotalPricePopup(context) : null,
-              child: Opacity(
-                opacity: hasSelected ? 1.0 : 0.5,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
+          child: Row(
+            children: [
+              Row(
+                children: [
+                  CustomCircleCheckbox(
+                    value: cartItems.every((item) => item.isSelected),
+                    onChanged: (value) {
+                      setState(() {
+                        for (var item in cartItems) {
+                          item.isSelected = value!;
+                        }
+                      });
+                    },
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'All',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Spacer(),
+              if (!isEditMode) ...[
+                GestureDetector(
+                  onTap:
+                      hasSelected
+                          ? () => _showTotalPricePopup(context, cartItems)
+                          : null, // ← Truyền cartItems
+                  child: Opacity(
+                    opacity: hasSelected ? 1.0 : 0.5,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          '${_currencyFormat.format(_calculateTotalPrice())} đ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              FormatPrice.formatPrice(
+                                _calculateTotalPrice(cartItems),
+                              ), // ← Truyền cartItems
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.primaryDark,
+                            ),
+                          ],
                         ),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.primaryDark,
+                        Text(
+                          'Save ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                       ],
                     ),
-                    Text(
-                      'Save ${_currencyFormat.format(_calculateTotalSavings())} đ',
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ),
+                Spacer(),
+                Container(
+                  width: 140,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDark,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      if (hasSelected) {
+                        Navigator.pushNamed(context, '/check-out');
+                      }
+                    },
+                    child: Text(
+                      'Check out (${state.cart.totalItems})',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            Spacer(),
-            Container(
-              width: 140,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primaryDark,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextButton(
-                onPressed: () {
-                  if (hasSelected) {
-                    Navigator.pushNamed(context, '/check-out');
-                  }
-                },
-                child: Text(
-                  'Check out (${cartItems.where((item) => item['isSelected'] == true).length})',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ),
-          ] else ...[
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-              decoration: BoxDecoration(
-                color:
-                    hasSelected
-                        ? AppColors.primaryDark
-                        : AppColors.primaryDark.withAlpha(125),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
-                  ),
-                ],
-              ),
-              child: TextButton(
-                onPressed: hasSelected ? _addToWishlist : null,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
+              ] else ...[
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  decoration: BoxDecoration(
+                    color:
+                        hasSelected
+                            ? AppColors.primaryDark
+                            : AppColors.primaryDark.withAlpha(125),
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
                   ),
-                  disabledForegroundColor: Colors.white70,
-                ),
-                child: Text(
-                  'Add to Wish List',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            SizedBox(width: 8),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-              decoration: BoxDecoration(
-                color:
-                    hasSelected
-                        ? AppColors.discountRed
-                        : AppColors.discountRed.withAlpha(125),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
+                  child: TextButton(
+                    onPressed: hasSelected ? _addToWishlist : null,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      disabledForegroundColor: Colors.white70,
+                    ),
+                    child: Text(
+                      'Add to Wish List',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ],
-              ),
-              child: TextButton(
-                onPressed: hasSelected ? _removeSelectedItems : null,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
+                ),
+                SizedBox(width: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  decoration: BoxDecoration(
+                    color:
+                        hasSelected
+                            ? AppColors.discountRed
+                            : AppColors.discountRed.withAlpha(125),
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
                   ),
-                  disabledForegroundColor: Colors.white70,
+                  child: TextButton(
+                    onPressed:
+                        hasSelected
+                            ? () => _removeSelectedItems(cartItems)
+                            : null, // ← Truyền cartItems
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      disabledForegroundColor: Colors.white70,
+                    ),
+                    child: Text(
+                      'Remove',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  'Remove',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
   // Widget for the cart items section
   Widget _buildCartItemsSection() {
-    return Column(
-      children: cartItems.map((item) => _buildCartItem(item)).toList(),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          final cartItems = state.cart.items;
+          if (cartItems.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Text(
+                  'Your cart is empty.',
+                  style: TextStyle(fontSize: 18, color: Colors.black54),
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: cartItems.length,
+            itemBuilder: (context, index) {
+              final item = cartItems[index];
+              return _buildCartItem(item);
+            },
+          );
+        } else if (state is CartError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   // Widget for a single cart item
-  Widget _buildCartItem(Map<String, dynamic> item) {
+  Widget _buildCartItem(CartItem items) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
@@ -518,24 +573,68 @@ class _CartScreenState extends State<CartScreen> {
           children: [
             SizedBox(width: 16),
             CustomCircleCheckbox(
-              value: item['isSelected'] ?? false,
+              value: items.isSelected,
               onChanged: (value) {
                 setState(() {
-                  item['isSelected'] = value;
+                  items.isSelected = value!;
                 });
               },
             ),
             SizedBox(width: 10),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Container(
-                width: 100,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8),
+            Container(
+              height: 160,
+              width: 100,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                  bottom: Radius.circular(8),
                 ),
-                child: Icon(Icons.book, size: 40, color: Colors.grey[600]),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black60,
+                    blurRadius: 6,
+                    offset: Offset(2, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                  bottom: Radius.circular(8),
+                ),
+                child:
+                    items.bookThumbnail.isNotEmpty
+                        ? Image.network(
+                          'http://10.0.2.2:8000${items.bookThumbnail}',
+                          width: 100,
+                          height: 160,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.book,
+                                size: 60,
+                                color: AppColors.primaryDark,
+                              ),
+                            );
+                          },
+                        )
+                        : const Center(
+                          child: Icon(
+                            Icons.book,
+                            size: 60,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
               ),
             ),
             SizedBox(width: 10),
@@ -550,7 +649,7 @@ class _CartScreenState extends State<CartScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item['title']!,
+                          items.bookName,
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 18,
@@ -558,11 +657,14 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ),
                         Text(
-                          item['author']!,
+                          'by ${items.bookAuthor}',
                           style: TextStyle(color: Colors.black54, fontSize: 15),
                         ),
                         Text(
-                          '${_currencyFormat.format(item['price'])} đ',
+                          FormatPrice.formatPrice(
+                            items.unitPrice -
+                                (items.unitPrice * items.sale / 100),
+                          ),
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
@@ -572,7 +674,7 @@ class _CartScreenState extends State<CartScreen> {
                         Row(
                           children: [
                             Text(
-                              '${_currencyFormat.format(item['originalPrice'])} đ',
+                              FormatPrice.formatPrice(items.unitPrice),
                               style: TextStyle(
                                 decoration: TextDecoration.lineThrough,
                                 decorationColor: Colors.grey,
@@ -581,31 +683,32 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                             ),
                             SizedBox(width: 8),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.discountRed,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(2, 4),
+                            if (items.sale > 0)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.discountRed,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(2, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  '-${items.sale.toInt()}%',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                ],
-                              ),
-                              child: Text(
-                                item['discount']!,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ],
@@ -615,7 +718,7 @@ class _CartScreenState extends State<CartScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'In stock: ${item['inStock']}',
+                          'In stock: ${items.inStock}',
                           style: TextStyle(
                             color: AppColors.black70,
                             fontSize: 14,
@@ -643,13 +746,20 @@ class _CartScreenState extends State<CartScreen> {
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   icon: Icon(Icons.remove, size: 18),
-                                  onPressed: () {
-                                    setState(() {
-                                      if (item['quantity'] > 1) {
-                                        item['quantity']--;
-                                      }
-                                    });
-                                  },
+                                  onPressed:
+                                      items.quantity > 1
+                                          ? () {
+                                            setState(() {
+                                              items.quantity--;
+                                            });
+                                            context.read<CartBloc>().add(
+                                              UpdateCartItemQuantity(
+                                                items.id,
+                                                items.quantity,
+                                              ),
+                                            );
+                                          }
+                                          : null,
                                 ),
                               ),
                               Padding(
@@ -657,7 +767,7 @@ class _CartScreenState extends State<CartScreen> {
                                   horizontal: 6,
                                 ),
                                 child: Text(
-                                  '${item['quantity']}',
+                                  items.quantity.toString(),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -671,13 +781,21 @@ class _CartScreenState extends State<CartScreen> {
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   icon: Icon(Icons.add, size: 18),
-                                  onPressed: () {
-                                    setState(() {
-                                      if (item['quantity'] < item['inStock']) {
-                                        item['quantity']++;
-                                      }
-                                    });
-                                  },
+                                  onPressed:
+                                      items.quantity < items.inStock
+                                          ? () {
+                                            setState(() {
+                                              items.quantity++;
+                                            });
+                                            // Có thể gọi API cập nhật số lượng ở đây
+                                            context.read<CartBloc>().add(
+                                              UpdateCartItemQuantity(
+                                                items.id,
+                                                items.quantity,
+                                              ),
+                                            );
+                                          }
+                                          : null,
                                 ),
                               ),
                             ],
@@ -706,9 +824,14 @@ class _CartScreenState extends State<CartScreen> {
               child: IconButton(
                 icon: Icon(Icons.delete, color: Colors.white, size: 38),
                 onPressed: () {
-                  setState(() {
-                    cartItems.remove(item);
-                  });
+                  context.read<CartBloc>().add(RemoveCartItem(items.id));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Item removed from cart'),
+                      duration: Duration(seconds: 2),
+                      backgroundColor: AppColors.primaryDark,
+                    ),
+                  );
                 },
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(),
@@ -746,152 +869,203 @@ class _CartScreenState extends State<CartScreen> {
 
   // Widget for the recommended items grid
   Widget _buildRecommendedItemsGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.55,
-        ),
-        itemCount: recommendedItems.length > 6 ? 6 : recommendedItems.length,
-        itemBuilder:
-            (context, index) => _buildRecommendedItem(recommendedItems[index]),
-      ),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.55,
+              ),
+              itemCount: state.relatedBooks.length,
+              itemBuilder:
+                  (context, index) =>
+                      _buildRecommendedItem(state.relatedBooks[index]),
+            ),
+          );
+        } else if (state is CartError) {
+          return Center(child: Text('Error: ${state.message}'));
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
   // Widget for a single recommended item
-  Widget _buildRecommendedItem(Map<String, dynamic> book) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 6,
-            spreadRadius: 1,
-            offset: const Offset(1, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+  Widget _buildRecommendedItem(Book book) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/detail', arguments: {'bookId': book.id});
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              spreadRadius: 1,
+              offset: const Offset(1, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    child:
+                        book.thumbnail.isNotEmpty
+                            ? Image.network(
+                              'http://10.0.2.2:8000${book.thumbnail}',
+                              width: double.infinity,
+                              height: 170,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(
+                                    Icons.book,
+                                    size: 60,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                );
+                              },
+                            )
+                            : const Center(
+                              child: Icon(
+                                Icons.book,
+                                size: 60,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
                   ),
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.book,
-                    size: 50,
-                    color: AppColors.primaryDark,
+                if (book.saleOff > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '-${book.saleOff.toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              if (book['discount'] != null && book['discount'] != '')
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      book['discount'],
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'by ${book.author}',
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Text(
+                          '5',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Icon(Icons.star, size: 16, color: Colors.amber),
+                        SizedBox(
+                          width: 12,
+                          height: 16,
+                          child: VerticalDivider(
+                            color: AppColors.black70,
+                            thickness: 1.5,
+                          ),
+                        ),
+                        Text(
+                          '${book.sold} sold',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      FormatPrice.formatPrice(
+                        book.price - (book.price * book.saleOff / 100),
+                      ),
+                      style: TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book['title'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.text,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book['author'] != null ? 'by ${book['author']}' : '',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Text(
-                        book['rating'] != null
-                            ? book['rating'].toString()
-                            : '-',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black70,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const Icon(Icons.star, size: 16, color: Colors.amber),
-                      SizedBox(
-                        width: 12,
-                        height: 16,
-                        child: VerticalDivider(
-                          color: AppColors.black70,
-                          thickness: 1.5,
-                        ),
-                      ),
-                      Text(
-                        book['sold'] != null ? '${book['sold']} sold' : '-',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '${_currencyFormat.format(book['price'])} đ',
-                    style: TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

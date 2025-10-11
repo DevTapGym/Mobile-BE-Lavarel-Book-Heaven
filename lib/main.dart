@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
+import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
+import 'package:heaven_book_app/bloc/cart/cart_state.dart';
 import 'package:heaven_book_app/repositories/book_repository.dart';
+import 'package:heaven_book_app/repositories/cart_repository.dart';
+import 'package:heaven_book_app/screens/Auth/active_screen.dart';
+import 'package:heaven_book_app/screens/Auth/forgot_screen.dart';
+import 'package:heaven_book_app/screens/Auth/init_screen.dart';
+import 'package:heaven_book_app/screens/Auth/login_screen.dart';
+import 'package:heaven_book_app/screens/Auth/register_screen.dart';
+import 'package:heaven_book_app/screens/Auth/reset_screen.dart';
 import 'package:heaven_book_app/screens/Cart/check_out_screen.dart';
 import 'package:heaven_book_app/screens/Home/detail_review_screen.dart';
 import 'package:heaven_book_app/screens/Home/detail_screen.dart';
@@ -18,11 +31,19 @@ import 'package:heaven_book_app/screens/Profile/edit_profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/reward_screen.dart';
 import 'package:heaven_book_app/screens/Profile/shipping_address_screen.dart';
+import 'package:heaven_book_app/services/api_client.dart';
+import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
 void main() {
-  final bookRepository = BookRepository();
+  WidgetsFlutterBinding.ensureInitialized();
+  final storage = FlutterSecureStorage();
+  final authService = AuthService();
+  final apiClient = ApiClient(storage, authService);
+
+  final cartRepository = CartRepository(apiClient);
+  final bookRepository = BookRepository(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -30,8 +51,23 @@ void main() {
         BlocProvider<BookBloc>(
           create: (_) => BookBloc(bookRepository)..add(LoadBooks()),
         ),
+        BlocProvider<AuthBloc>(create: (_) => AuthBloc(authService)),
+        BlocProvider<CartBloc>(
+          create:
+              (_) => CartBloc(cartRepository, bookRepository)..add(LoadCart()),
+        ),
       ],
-      child: MyApp(),
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthLoggedOut) {
+            // Chuyển về màn hình login
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/init', (route) => false);
+          }
+        },
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -48,7 +84,13 @@ class MyApp extends StatelessWidget {
       routes: {
         '/main': (context) => const MainScreen(),
         '/onboarding': (context) => const OnboardingWrapper(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/forgot': (context) => const ForgotScreen(),
+        '/active': (context) => const ActiveScreen(),
+        '/init': (context) => const InitScreen(),
 
+        //'/reset': (context) => const ResetScreen(),
         '/home': (context) => const HomeScreen(),
         '/result': (context) => const ResultScreen(),
         '/detail': (context) => const DetailScreen(),
@@ -64,9 +106,20 @@ class MyApp extends StatelessWidget {
         '/edit-profile': (context) => const EditProfileScreen(),
         '/shipping-address': (context) => const ShippingAddressScreen(),
         '/add-address': (context) => const AddAddressScreen(),
-        'change-password': (context) => const ChangePasswordScreen(),
+        '/change-password': (context) => const ChangePasswordScreen(),
         '/reward': (context) => RewardScreen(),
         '/detail-voucher': (context) => const DetailVoucherScreen(),
+      },
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/reset':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => ResetScreen(email: args['email']),
+            );
+          default:
+            return MaterialPageRoute(builder: (_) => LoginScreen());
+        }
       },
     );
   }
@@ -97,69 +150,82 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, -2),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        int badgeCount = 0;
+
+        if (state is CartLoaded) {
+          badgeCount = state.cart.totalItems;
+        }
+        return Scaffold(
+          body: _screens[_selectedIndex],
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-          ],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            selectedItemColor: AppColors.primaryDark,
-            unselectedItemColor: Colors.grey,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedFontSize: 14,
-            unselectedFontSize: 0,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.3,
-              fontSize: 14,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              child: BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
+                currentIndex: _selectedIndex,
+                onTap: _onItemTapped,
+                selectedItemColor: AppColors.primaryDark,
+                unselectedItemColor: Colors.grey,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedFontSize: 14,
+                unselectedFontSize: 0,
+                selectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                  fontSize: 14,
+                ),
+                showUnselectedLabels: false,
+                items: [
+                  _buildNavItem(
+                    Icons.home_outlined,
+                    Icons.home,
+                    'Home',
+                    _selectedIndex == 0,
+                  ),
+                  _buildNavItem(
+                    Icons.receipt_long_outlined,
+                    Icons.receipt_long,
+                    'Orders',
+                    _selectedIndex == 1,
+                  ),
+                  _buildNavItem(
+                    Icons.shopping_cart_outlined,
+                    Icons.shopping_cart,
+                    'Cart',
+                    _selectedIndex == 2,
+                    badgeCount: badgeCount,
+                  ),
+                  _buildNavItem(
+                    Icons.person_outline,
+                    Icons.person,
+                    'Profile',
+                    _selectedIndex == 3,
+                  ),
+                ],
+              ),
             ),
-            showUnselectedLabels: false,
-            items: [
-              _buildNavItem(
-                Icons.home_outlined,
-                Icons.home,
-                'Home',
-                _selectedIndex == 0,
-              ),
-              _buildNavItem(
-                Icons.receipt_long_outlined,
-                Icons.receipt_long,
-                'Orders',
-                _selectedIndex == 1,
-              ),
-              _buildNavItem(
-                Icons.shopping_cart_outlined,
-                Icons.shopping_cart,
-                'Cart',
-                _selectedIndex == 2,
-                badgeCount: 3,
-              ),
-              _buildNavItem(
-                Icons.person_outline,
-                Icons.person,
-                'Profile',
-                _selectedIndex == 3,
-              ),
-            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

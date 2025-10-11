@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:video_player/video_player.dart';
-import 'init_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -298,11 +297,9 @@ class OnboardingScreen3 extends StatelessWidget {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(
+                      Navigator.pushNamedAndRemoveUntil(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => const InitScreen(),
-                        ),
+                        '/init',
                         (route) => false,
                       );
                     },

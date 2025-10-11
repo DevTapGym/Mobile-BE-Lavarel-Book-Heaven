@@ -157,7 +157,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
-    _authService.dispose();
     super.dispose();
   }
 

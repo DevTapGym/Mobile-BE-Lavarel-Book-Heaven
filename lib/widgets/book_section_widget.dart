@@ -51,7 +51,7 @@ class BookSectionWidget extends StatelessWidget {
 
         // --- Danh sách sách ---
         SizedBox(
-          height: 300,
+          height: 320,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: books.length,
@@ -101,13 +101,13 @@ class BookCard extends StatelessWidget {
       child: Container(
         width: 180,
         height: 240,
-        margin: const EdgeInsets.only(right: 16),
+        margin: const EdgeInsets.only(right: 16, bottom: 8, top: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

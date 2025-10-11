@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'onboarding_screen.dart';
-import 'init_screen.dart';
 
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
@@ -59,11 +58,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   }
 
   void _skipToEnd() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const InitScreen()),
-      (route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/init', (route) => false);
   }
 
   @override
