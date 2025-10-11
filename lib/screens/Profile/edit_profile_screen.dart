@@ -12,6 +12,8 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  TextEditingController nameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,12 +60,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               SizedBox(height: 36.0),
                               TextfieldCustomWidget(
                                 label: 'Name',
-                                initialValue: 'Huỳnh Công Tiến',
+                                controller: nameController,
                               ),
                               SizedBox(height: 8.0),
                               TextfieldCustomWidget(
                                 label: 'Email',
-                                initialValue: 'tienhuynh303@gmail.com',
+                                controller: emailController,
                               ),
                               SizedBox(height: 8.0),
                               DatePickerCustomWidget(
