@@ -160,9 +160,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
           );
 
+          final navigator = Navigator.of(context);
           Future.delayed(Duration(milliseconds: 1500), () {
-            if (mounted) {
-              Navigator.of(context).pop(true);
+            if (mounted && navigator.canPop()) {
+              navigator.pop(true);
             }
           });
         } else if (state is AddressError) {
