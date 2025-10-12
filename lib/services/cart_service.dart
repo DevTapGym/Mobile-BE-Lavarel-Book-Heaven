@@ -3,11 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:heaven_book_app/model/cart.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
-class CartRepository {
+class CartService {
   final ApiClient apiClient;
   int? _cartId;
 
-  CartRepository(this.apiClient);
+  CartService(this.apiClient);
 
   Future<Cart> getMyCart() async {
     try {

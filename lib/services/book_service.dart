@@ -1,10 +1,10 @@
 import 'package:heaven_book_app/model/book.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
-class BookRepository {
+class BookService {
   final ApiClient apiClient;
 
-  BookRepository(this.apiClient);
+  BookService(this.apiClient);
 
   Future<List<Book>> getAllBooks() async {
     try {

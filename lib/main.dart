@@ -10,8 +10,8 @@ import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
 import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
-import 'package:heaven_book_app/repositories/book_repository.dart';
-import 'package:heaven_book_app/repositories/cart_repository.dart';
+import 'package:heaven_book_app/services/book_service.dart';
+import 'package:heaven_book_app/services/cart_service.dart';
 import 'package:heaven_book_app/screens/Auth/active_screen.dart';
 import 'package:heaven_book_app/screens/Auth/forgot_screen.dart';
 import 'package:heaven_book_app/screens/Auth/init_screen.dart';
@@ -45,8 +45,8 @@ void main() {
   final authService = AuthService();
   final apiClient = ApiClient(storage, authService);
 
-  final cartRepository = CartRepository(apiClient);
-  final bookRepository = BookRepository(apiClient);
+  final cartRepository = CartService(apiClient);
+  final bookRepository = BookService(apiClient);
   final addressService = AddressService(apiClient);
 
   runApp(

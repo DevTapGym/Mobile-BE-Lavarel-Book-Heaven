@@ -1,14 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:heaven_book_app/repositories/book_repository.dart';
+import 'package:heaven_book_app/services/book_service.dart';
 import 'cart_event.dart';
 import 'cart_state.dart';
-import 'package:heaven_book_app/repositories/cart_repository.dart';
+import 'package:heaven_book_app/services/cart_service.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
-  final CartRepository _cartRepository;
-  final BookRepository _bookRepository;
+  final CartService _cartService;
+  final BookService _bookService;
 
-  CartBloc(this._cartRepository, this._bookRepository) : super(CartInitial()) {
+  CartBloc(this._cartService, this._bookService) : super(CartInitial()) {
     on<LoadCart>(_onLoadCart);
     on<UpdateCartItemQuantity>(_onUpdateCartItemQuantity);
     on<AddToCart>(_onAddToCart);
@@ -18,8 +18,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   Future<void> _onLoadCart(LoadCart event, Emitter<CartState> emit) async {
     emit(CartLoading());
     try {
-      final cart = await _cartRepository.getMyCart();
-      final relatedBooks = await _bookRepository.getBooksByCategory(
+      final cart = await _cartService.getMyCart();
+      final relatedBooks = await _bookService.getBooksByCategory(
         cart.items.isNotEmpty ? cart.items.first.bookId : 0,
       );
       emit(CartLoaded(cart: cart, relatedBooks: relatedBooks));
@@ -36,11 +36,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final currentState = state as CartLoaded;
       emit(CartLoading());
       try {
-        await _cartRepository.updateCartItemQuantity(
+        await _cartService.updateCartItemQuantity(
           event.cartItemId,
           event.newQuantity,
         );
-        final updatedCart = await _cartRepository.getMyCart();
+        final updatedCart = await _cartService.getMyCart();
         emit(
           CartLoaded(
             cart: updatedCart,
@@ -58,8 +58,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final currentState = state as CartLoaded;
       emit(CartLoading());
       try {
-        await _cartRepository.addToCart(event.bookId, event.quantity);
-        final updatedCart = await _cartRepository.getMyCart();
+        await _cartService.addToCart(event.bookId, event.quantity);
+        final updatedCart = await _cartService.getMyCart();
         emit(
           CartLoaded(
             cart: updatedCart,
@@ -80,8 +80,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final currentState = state as CartLoaded;
       emit(CartLoading());
       try {
-        await _cartRepository.removeCartItem(event.cartItemId);
-        final updatedCart = await _cartRepository.getMyCart();
+        await _cartService.removeCartItem(event.cartItemId);
+        final updatedCart = await _cartService.getMyCart();
         emit(
           CartLoaded(
             cart: updatedCart,
