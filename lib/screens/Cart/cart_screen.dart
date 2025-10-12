@@ -62,22 +62,27 @@ class _CartScreenState extends State<CartScreen> {
       );
       return;
     } else {
+      final cartBloc = context.read<CartBloc>();
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
       for (var item in selectedItems) {
-        context.read<CartBloc>().add(RemoveCartItem(item.id));
+        cartBloc.add(RemoveCartItem(item.id));
         await Future.delayed(Duration(milliseconds: 1000));
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Selected items removed from cart'),
-          duration: Duration(seconds: 2),
-          backgroundColor: AppColors.primaryDark,
-        ),
-      );
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Selected items removed from cart'),
+            duration: Duration(seconds: 2),
+            backgroundColor: AppColors.primaryDark,
+          ),
+        );
 
-      setState(() {
-        isEditMode = false;
-      });
+        setState(() {
+          isEditMode = false;
+        });
+      }
     }
   }
 
@@ -416,7 +421,7 @@ class _CartScreenState extends State<CartScreen> {
                       }
                     },
                     child: Text(
-                      'Check out (${state.cart.totalItems})',
+                      'Check out (${state.cart.items.where((item) => item.isSelected).length})', // ← Truyền cartItems
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,

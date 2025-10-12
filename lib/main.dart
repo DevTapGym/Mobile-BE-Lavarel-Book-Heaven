@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:heaven_book_app/bloc/address/address_bloc.dart';
+import 'package:heaven_book_app/bloc/address/address_event.dart';
 import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
 import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
@@ -31,6 +33,7 @@ import 'package:heaven_book_app/screens/Profile/edit_profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/profile_screen.dart';
 import 'package:heaven_book_app/screens/Profile/reward_screen.dart';
 import 'package:heaven_book_app/screens/Profile/shipping_address_screen.dart';
+import 'package:heaven_book_app/services/address_service.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
@@ -44,6 +47,7 @@ void main() {
 
   final cartRepository = CartRepository(apiClient);
   final bookRepository = BookRepository(apiClient);
+  final addressService = AddressService(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -55,6 +59,9 @@ void main() {
         BlocProvider<CartBloc>(
           create:
               (_) => CartBloc(cartRepository, bookRepository)..add(LoadCart()),
+        ),
+        BlocProvider<AddressBloc>(
+          create: (_) => AddressBloc(addressService)..add(LoadAddresses()),
         ),
       ],
       child: BlocListener<AuthBloc, AuthState>(

@@ -1,5 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:heaven_book_app/bloc/address/address_bloc.dart';
+import 'package:heaven_book_app/bloc/address/address_state.dart';
+import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/bloc/payment/payment_bloc.dart';
+import 'package:heaven_book_app/bloc/payment/payment_event.dart';
+import 'package:heaven_book_app/bloc/payment/payment_state.dart';
+import 'package:heaven_book_app/services/payment_service.dart';
+import 'package:heaven_book_app/services/api_client.dart';
+import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/address_card_widget.dart';
 import 'package:heaven_book_app/widgets/appbar_custom_widget.dart';
 import 'package:heaven_book_app/widgets/custom_circle_checkbox.dart';
@@ -13,6 +26,7 @@ class CheckOutScreen extends StatefulWidget {
 
 class _CheckOutScreenState extends State<CheckOutScreen> {
   bool isChecked = false;
+  int? selectedPaymentId;
 
   Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
     return Padding(
@@ -50,18 +64,45 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Widget _buildAddressSection() {
-    return AddressCardWidget(
-      title: 'Home',
-      name: 'John Doe',
-      phone: '+1 234 567 890',
-      address: '123 Main St, City, Country',
-      isDefault: false,
-      hasEditButton: false,
-      hasDeleteButton: false,
-      isTappable: true,
-      onTap: () {},
-      onEdit: () {},
-      onDelete: () {},
+    return BlocBuilder<AddressBloc, AddressState>(
+      builder: (context, state) {
+        if (state is AddressLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is AddressLoaded) {
+          final address = state.addresses;
+          if (address.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                'No addresses found. Please add a shipping address in your profile.',
+                style: TextStyle(fontSize: 16, color: AppColors.black70),
+              ),
+            );
+          } else {
+            final defaultAddress = address.firstWhere(
+              (addr) => addr.isDefault == 1,
+              orElse: () => address[0],
+            );
+            return AddressCardWidget(
+              title: defaultAddress.tagName,
+              name: defaultAddress.recipientName,
+              phone: defaultAddress.phoneNumber,
+              address: defaultAddress.address,
+              isDefault: false,
+              hasEditButton: false,
+              hasDeleteButton: false,
+              isTappable: true,
+              onTap: () {
+                Navigator.pushNamed(context, '/shipping-address');
+              },
+            );
+          }
+        } else if (state is AddressError) {
+          return Center(child: Text('Failed to load addresses'));
+        } else {
+          return SizedBox.shrink();
+        }
+      },
     );
   }
 
@@ -69,23 +110,54 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
     required String title,
     required String price,
     required String originalPrice,
-    required String discount,
+    required int discount,
     required String quantity,
-    String? gift,
+    String? thumbnailUrl,
+    List<String>? gift,
   }) {
     return Column(
       children: [
         Row(
           children: [
-            Container(
-              width: 90,
-              height: 140,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color: AppColors.primaryDark,
+            if (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
+              Container(
+                width: 90,
+                height: 140,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.0),
+                  color: AppColors.primaryDark,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(2, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    'http://10.0.2.2:8000$thumbnailUrl',
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (context, error, stackTrace) => Icon(
+                          Icons.image,
+                          size: 30,
+                          color: Colors.grey[300],
+                        ),
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: 90,
+                height: 140,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.0),
+                  color: AppColors.primaryDark,
+                ),
+                child: Icon(Icons.image, size: 30, color: Colors.grey[300]),
               ),
-              child: Icon(Icons.image, size: 30, color: Colors.grey[300]),
-            ),
             SizedBox(width: 16.0),
             Expanded(
               child: Column(
@@ -98,8 +170,17 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (gift != null) Text(gift),
-                  Text('- Free shipping'),
+                  if (gift != null)
+                    ...gift.map(
+                      (g) => Text(
+                        g,
+                        style: TextStyle(
+                          fontSize: 14.0,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.black70,
+                        ),
+                      ),
+                    ),
                   SizedBox(height: 12.0),
                   Text(
                     price,
@@ -122,31 +203,34 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                         ),
                       ),
                       SizedBox(width: 8),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.discountRed,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(2, 4),
+                      if (discount > 0) ...[
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.discountRed,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: Offset(2, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '-$discount%',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                        child: Text(
-                          discount,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
+                      ],
+
                       Spacer(),
                       Text(
                         quantity,
@@ -167,6 +251,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildGiftItem() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,45 +314,68 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Widget _buildProductsSection() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.0, top: 10.0, left: 18.0, right: 18.0),
-      padding: EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.0),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            spreadRadius: 1,
-            offset: Offset(0, 0),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildProductItem(
-            title: 'Cho Tôi Xin Một Vé Đi Tuổi Thơ',
-            price: '300.000 đ',
-            originalPrice: '400.000 đ',
-            discount: '-25%',
-            quantity: 'x1',
-            gift: '- Free bookmark',
-          ),
-          _buildProductItem(
-            title: 'Tuổi Trẻ Đáng Giá Bao Nhiêu',
-            price: '100.000 đ',
-            originalPrice: '120.000 đ',
-            discount: '-25%',
-            quantity: 'x1',
-            gift: '- Free bookmark',
-          ),
-          _buildGiftItem(),
-        ],
-      ),
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          final cartItems =
+              state.cart.items.where((item) => item.isSelected).toList();
+          if (cartItems.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                'No products selected for checkout. Please select items in your cart.',
+                style: TextStyle(fontSize: 16, color: AppColors.black70),
+              ),
+            );
+          } else {
+            return Container(
+              margin: EdgeInsets.only(top: 10.0, left: 18.0, right: 18.0),
+              padding: EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.0),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...cartItems.map(
+                    (item) => _buildProductItem(
+                      title: item.bookName,
+                      price: FormatPrice.formatPrice(
+                        item.unitPrice - (item.unitPrice * item.sale / 100),
+                      ),
+                      thumbnailUrl: item.bookThumbnail,
+                      originalPrice: FormatPrice.formatPrice(item.unitPrice),
+                      discount: item.sale.toInt(),
+                      quantity: 'x${item.quantity}',
+                      gift: ['Tặng kèm 1 bookmark', 'Tặng kèm 1 túi vải'],
+                    ),
+                  ),
+                  // _buildGiftItem(),
+                ],
+              ),
+            );
+          }
+        } else if (state is CartError) {
+          return Center(child: Text('Failed to load cart items'));
+        } else {
+          return SizedBox.shrink();
+        }
+      },
     );
   }
 
+  // ignore: unused_element
   Widget _buildDiscountSection() {
     return Container(
       margin: EdgeInsets.only(bottom: 10.0, top: 10.0, left: 18.0, right: 18.0),
@@ -370,35 +478,6 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
     );
   }
 
-  Widget _buildPaymentMethodItem(String title, IconData icon) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primaryDark, size: 30),
-          SizedBox(width: 8.0),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16.0,
-              fontWeight: FontWeight.w500,
-              color: AppColors.black70,
-            ),
-          ),
-          Spacer(),
-          CustomCircleCheckbox(
-            value: isChecked,
-            onChanged: (value) {
-              setState(() {
-                isChecked = value ?? false;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPaymentSection() {
     return Container(
       margin: EdgeInsets.only(bottom: 10.0, top: 10.0, left: 18.0, right: 18.0),
@@ -428,9 +507,54 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             ],
           ),
           SizedBox(height: 16.0),
-          _buildPaymentMethodItem('Momo E-Wallet', Icons.credit_card),
-          _buildPaymentMethodItem('Zalo Pay', Icons.credit_card),
-          _buildPaymentMethodItem('Cash on Delivery', Icons.credit_card),
+          BlocBuilder<PaymentBloc, PaymentState>(
+            builder: (context, state) {
+              if (state is PaymentLoading) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              } else if (state is PaymentLoaded) {
+                return Column(
+                  children:
+                      state.payments
+                          .map(
+                            (payment) => _buildPaymentMethodItem(
+                              payment.name,
+                              payment.imageUrl ?? '',
+                              payment.id,
+                              payment.isActive,
+                            ),
+                          )
+                          .toList(),
+                );
+              } else if (state is PaymentError) {
+                return Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.error, color: Colors.red, size: 40),
+                      SizedBox(height: 8),
+                      Text(
+                        'Failed to load payment methods',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        state.message,
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                return SizedBox.shrink();
+              }
+            },
+          ),
           Divider(color: Colors.black54, height: 32.0, thickness: 1.5),
           SizedBox(height: 12.0),
           Row(
@@ -470,178 +594,357 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
     );
   }
 
-  Widget _buildOrderSummarySection() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.0, top: 10.0, left: 18.0, right: 18.0),
-      padding: EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.0),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            spreadRadius: 1,
-            offset: Offset(0, 0),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.price_change, color: AppColors.black60, size: 30),
-              SizedBox(width: 8.0),
-              Text(
-                'Order Summary',
-                style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+  Widget _buildPaymentMethodItem(
+    String title,
+    String logoUrl,
+    int paymentId,
+    int isActive,
+  ) {
+    final isSelected = selectedPaymentId == paymentId;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.0),
+      child: GestureDetector(
+        onTap:
+            isActive == 1
+                ? () {
+                  setState(() {
+                    selectedPaymentId = paymentId;
+                  });
+                }
+                : null,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.0),
+                color: isActive == 1 ? Colors.white : Colors.grey[200],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    spreadRadius: 2,
+                    offset: Offset(2, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          SizedBox(height: 16.0),
-          _buildSummaryRow('Subtotal', '510.000 đ'),
-          _buildSummaryRow('Shipping', '30.000 đ'),
-          Padding(
-            padding: EdgeInsets.only(left: 12),
-            child: Text(
-              'Discounts:',
+              child:
+                  logoUrl.isNotEmpty
+                      ? ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          'http://10.0.2.2:8000$logoUrl',
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) => Icon(
+                                Icons.payment,
+                                size: 24,
+                                color: Colors.black,
+                              ),
+                        ),
+                      )
+                      : Icon(
+                        Icons.attach_money_outlined,
+                        size: 30,
+                        color:
+                            isActive == 1
+                                ? AppColors.black70
+                                : Colors.grey[400],
+                      ),
+            ),
+            SizedBox(width: 8.0),
+            Text(
+              title,
               style: TextStyle(
-                fontSize: 16,
-                color: AppColors.black70,
-                fontWeight: FontWeight.w700,
+                fontSize: 16.0,
+                fontWeight: FontWeight.w500,
+                color: isActive == 1 ? AppColors.black70 : Colors.grey[400],
               ),
             ),
-          ),
-          SizedBox(height: 4),
-          Padding(
-            padding: EdgeInsets.only(left: 12),
-            child: _buildSummaryRow('• Product Voucher', '-30.000 đ'),
-          ),
-          Padding(
-            padding: EdgeInsets.only(left: 12),
-            child: _buildSummaryRow('• Shipping Voucher', '-30.000 đ'),
-          ),
-          Padding(
-            padding: EdgeInsets.only(left: 12),
-            child: _buildSummaryRow('• Member Discount', '-20.000 đ'),
-          ),
-          Divider(),
-          _buildSummaryRow('Total Discounts', '-80.000 đ', isBold: true),
-          _buildSummaryRow('Final amount', '460.000 đ', isBold: true),
-        ],
+            Spacer(),
+            if (isActive == 1) ...[
+              CustomCircleCheckbox(
+                value: isSelected,
+                onChanged: (value) {
+                  if (isActive == 1) {
+                    setState(() {
+                      selectedPaymentId = paymentId;
+                    });
+                  }
+                },
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      height: 160,
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 18.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            spreadRadius: 1,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                'Total',
-                style: TextStyle(
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                ),
+  Widget _buildOrderSummarySection() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state is CartLoaded) {
+          final cartItems =
+              state.cart.items.where((item) => item.isSelected).toList();
+          if (cartItems.isEmpty) {
+            return SizedBox.shrink();
+          } else {
+            final subtotal = cartItems.fold<double>(
+              0.0,
+              (sum, item) => sum + (item.unitPrice) * item.quantity,
+            );
+
+            final shippingFee = 30000.0;
+            final discount = cartItems.fold<double>(
+              0.0,
+              (sum, item) =>
+                  sum + (item.unitPrice * (item.sale / 100)) * item.quantity,
+            );
+            final total = subtotal + shippingFee - discount;
+
+            return Container(
+              margin: EdgeInsets.only(bottom: 20.0, left: 18.0, right: 18.0),
+              padding: EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.0),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: Offset(0, 0),
+                  ),
+                ],
               ),
-              SizedBox(width: 4.0),
-              Text(
-                '(3 items)',
-                style: TextStyle(
-                  fontSize: 14.0,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.black70,
-                ),
-              ),
-              Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '460.000 đ',
-                    style: TextStyle(
-                      fontSize: 22.0,
-                      color: Colors.red,
-                      fontWeight: FontWeight.w900,
+                  _buildSummaryRow(
+                    'Subtotal',
+                    FormatPrice.formatPrice(subtotal),
+                  ),
+                  _buildSummaryRow(
+                    'Shipping Fee',
+                    FormatPrice.formatPrice(shippingFee),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: Text(
+                      'Discounts:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.black70,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  Text(
-                    'Save 80.000 đ',
-                    style: TextStyle(
-                      letterSpacing: -1,
-                      fontSize: 14.0,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.black70,
+                  SizedBox(height: 4),
+                  Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: _buildSummaryRow(
+                      '- Shipping Voucher',
+                      '-${FormatPrice.formatPrice(0.0)}',
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: _buildSummaryRow(
+                      '- Member Voucher',
+                      '-${FormatPrice.formatPrice(0.0)}',
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: _buildSummaryRow(
+                      '- Product Voucher',
+                      '-${FormatPrice.formatPrice(discount)}',
+                    ),
+                  ),
+                  Divider(color: Colors.grey, height: 32.0),
+                  _buildSummaryRow(
+                    'Total Discounts',
+                    '-${FormatPrice.formatPrice(discount)}',
+                    isBold: true,
+                  ),
+                  _buildSummaryRow(
+                    'Total',
+                    FormatPrice.formatPrice(total),
+                    isBold: true,
+                  ),
+                ],
+              ),
+            );
+          }
+        } else if (state is CartError) {
+          return Center(child: Text('Failed to load cart items'));
+        } else {
+          return SizedBox.shrink();
+        }
+      },
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoading) {
+          return SizedBox(
+            height: 70,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        } else if (state is CartLoaded) {
+          final cartItems =
+              state.cart.items.where((item) => item.isSelected).toList();
+          if (cartItems.isEmpty) {
+            return SizedBox.shrink();
+          } else {
+            final totalPrice = cartItems.fold<double>(
+              0.0,
+              (sum, item) =>
+                  sum +
+                  (item.unitPrice * (1 - (item.sale / 100))) * item.quantity,
+            );
+
+            final totalQuantity = cartItems.fold<int>(
+              0,
+              (sum, item) => sum + item.quantity,
+            );
+
+            final discount = cartItems.fold<double>(
+              0.0,
+              (sum, item) =>
+                  sum + (item.unitPrice * (item.sale / 100)) * item.quantity,
+            );
+            return Container(
+              height: 160,
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 18.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 22.0,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
+                      SizedBox(width: 4.0),
+                      Text(
+                        '($totalQuantity items)',
+                        style: TextStyle(
+                          fontSize: 14.0,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.black70,
+                        ),
+                      ),
+                      Spacer(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            FormatPrice.formatPrice(totalPrice + 30000),
+                            style: TextStyle(
+                              fontSize: 22.0,
+                              color: Colors.red,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            'Save ${FormatPrice.formatPrice(discount)}',
+                            style: TextStyle(
+                              letterSpacing: -1,
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.black70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    margin: EdgeInsets.only(top: 10.0),
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryDark,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                      ),
+                      child: Text(
+                        'Place Order',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-          Container(
-            margin: EdgeInsets.only(top: 10.0),
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryDark,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-              ),
-              child: Text(
-                'Place Order',
-                style: TextStyle(
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+            );
+          }
+        } else if (state is CartError) {
+          return SizedBox(
+            height: 70,
+            child: Center(child: Text('Failed to load cart items')),
+          );
+        } else {
+          return SizedBox.shrink();
+        }
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppbarCustomWidget(title: 'Order Summary'),
-      body: Container(
-        color: AppColors.background,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildAddressSection(),
-              _buildProductsSection(),
-              _buildDiscountSection(),
-              _buildPaymentSection(),
-              _buildOrderSummarySection(),
-            ],
+    final apiClient = ApiClient(const FlutterSecureStorage(), AuthService());
+
+    return BlocProvider(
+      create:
+          (context) =>
+              PaymentBloc(PaymentService(apiClient))..add(LoadPaymentMethods()),
+      child: Scaffold(
+        appBar: AppbarCustomWidget(title: 'Order Summary'),
+        body: Container(
+          color: AppColors.background,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildAddressSection(),
+                _buildProductsSection(),
+                //_buildDiscountSection(),
+                _buildPaymentSection(),
+                _buildOrderSummarySection(),
+              ],
+            ),
           ),
         ),
+        bottomNavigationBar: _buildBottomNavigationBar(),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
-import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/book/book_state.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
 import 'package:heaven_book_app/bloc/cart/cart_event.dart';
@@ -54,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     // Load dữ liệu
-    context.read<BookBloc>().add(LoadBooks());
+
     _categoryBloc.add(LoadCategories());
   }
 

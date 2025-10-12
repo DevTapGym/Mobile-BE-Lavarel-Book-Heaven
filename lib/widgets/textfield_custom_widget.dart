@@ -3,22 +3,18 @@ import 'package:heaven_book_app/themes/app_colors.dart';
 
 class TextfieldCustomWidget extends StatelessWidget {
   final String label;
-  final String initialValue;
   final Widget? suffixIcon;
+  final TextEditingController controller;
 
   const TextfieldCustomWidget({
     super.key,
     required this.label,
-    required this.initialValue,
+    required this.controller,
     this.suffixIcon,
   });
 
   @override
   Widget build(BuildContext context) {
-    TextEditingController controller = TextEditingController(
-      text: initialValue,
-    );
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
