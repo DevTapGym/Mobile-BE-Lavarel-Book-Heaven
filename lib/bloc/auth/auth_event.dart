@@ -81,4 +81,11 @@ class ResetPasswordRequested extends AuthEvent {
   List<Object?> get props => [email, code, newPassword];
 }
 
-class AppStarted extends AuthEvent {}
+class AppStarted extends AuthEvent {
+  final bool isTokenExpired;
+
+  AppStarted({this.isTokenExpired = false});
+
+  @override
+  List<Object?> get props => [isTokenExpired];
+}

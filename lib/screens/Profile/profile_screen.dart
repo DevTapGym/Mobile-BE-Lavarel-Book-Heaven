@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/user/user_bloc.dart';
+import 'package:heaven_book_app/bloc/user/user_event.dart';
+import 'package:heaven_book_app/bloc/user/user_state.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/screens/Auth/init_screen.dart';
@@ -161,6 +165,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    context.read<UserBloc>().add(LoadUserInfo());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ValueNotifier<bool> notificationSwitch = ValueNotifier<bool>(true);
     final ValueNotifier<String> selectedLanguage = ValueNotifier<String>('VN');
@@ -185,182 +195,225 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Center(
             child: Column(
               children: [
-                Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    Container(
-                      margin: EdgeInsets.only(top: 100.0, bottom: 12.0),
-                      child: Card(
-                        color: Colors.white,
-                        elevation: 4.0,
-                        shadowColor: Colors.black38,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            top: 70.0,
-                            left: 16.0,
-                            right: 16.0,
-                            bottom: 16.0,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(height: 8.0),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Huỳnh Công Tiến',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                BlocBuilder<UserBloc, UserState>(
+                  builder: (context, state) {
+                    if (state is UserLoaded) {
+                      final user = state.userData;
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.only(top: 100.0, bottom: 12.0),
+                            child: Card(
+                              color: Colors.white,
+                              elevation: 4.0,
+                              shadowColor: Colors.black38,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15.0),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  top: 70.0,
+                                  left: 16.0,
+                                  right: 16.0,
+                                  bottom: 16.0,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(height: 8.0),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          user.name.isNotEmpty
+                                              ? user.name
+                                              : 'No Name',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8.0),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8.0,
+                                            vertical: 4.0,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius: BorderRadius.circular(
+                                              12.0,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Premium',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  SizedBox(width: 8.0),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.0,
-                                      vertical: 4.0,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(12.0),
-                                    ),
-                                    child: Text(
-                                      'Premium',
+                                    SizedBox(height: 8.0),
+                                    Text(
+                                      user.email,
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black54,
+                                        fontSize: 16,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8.0),
-                              Text(
-                                'Tienhuynh30303@gmail.com',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 16,
+                                    SizedBox(height: 6.0),
+                                    Divider(
+                                      thickness: 1.5,
+                                      color: Colors.black54,
+                                      indent: 20,
+                                      endIndent: 20,
+                                    ),
+                                    SizedBox(height: 16.0),
+                                    ListTile(
+                                      leading: Icon(
+                                        Icons.person,
+                                        color: Colors.black54,
+                                        size: 28,
+                                      ),
+                                      title: Text(
+                                        'Edit Profile',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                          fontSize: 17,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/edit-profile',
+                                        );
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: Icon(
+                                        Icons.location_on,
+                                        color: Colors.black54,
+                                        size: 28,
+                                      ),
+                                      title: Text(
+                                        'Shipping Address',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                          fontSize: 17,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/shipping-address',
+                                        );
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: Icon(
+                                        Icons.card_giftcard,
+                                        color: Colors.black54,
+                                        size: 28,
+                                      ),
+                                      title: Text(
+                                        'Rewards',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                          fontSize: 17,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.pushNamed(context, '/reward');
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: Icon(
+                                        Icons.lock,
+                                        color: Colors.black54,
+                                        size: 28,
+                                      ),
+                                      title: Text(
+                                        'Change Password',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                          fontSize: 17,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/change-password',
+                                        );
+                                      },
+                                    ),
+                                    SizedBox(height: 24.0),
+                                  ],
                                 ),
                               ),
-                              SizedBox(height: 6.0),
-                              Divider(
-                                thickness: 1.5,
-                                color: Colors.black54,
-                                indent: 20,
-                                endIndent: 20,
-                              ),
-                              SizedBox(height: 16.0),
-                              ListTile(
-                                leading: Icon(
-                                  Icons.person,
-                                  color: Colors.black54,
-                                  size: 28,
-                                ),
-                                title: Text(
-                                  'Edit Profile',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black54,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/edit-profile');
-                                },
-                              ),
-                              ListTile(
-                                leading: Icon(
-                                  Icons.location_on,
-                                  color: Colors.black54,
-                                  size: 28,
-                                ),
-                                title: Text(
-                                  'Shipping Address',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black54,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/shipping-address',
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: Icon(
-                                  Icons.card_giftcard,
-                                  color: Colors.black54,
-                                  size: 28,
-                                ),
-                                title: Text(
-                                  'Rewards',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black54,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/reward');
-                                },
-                              ),
-                              ListTile(
-                                leading: Icon(
-                                  Icons.lock,
-                                  color: Colors.black54,
-                                  size: 28,
-                                ),
-                                title: Text(
-                                  'Change Password',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black54,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    'change-password',
-                                  );
-                                },
-                              ),
-                              SizedBox(height: 24.0),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    Transform.translate(
-                      offset: Offset(0, 0),
-                      child: Container(
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 8.0,
+                          Transform.translate(
+                            offset: Offset(0, 0),
+                            child: Container(
+                              width: 160,
+                              height: 160,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                border: Border.all(
+                                  color: AppColors.primary,
+                                  width: 8.0,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: CircleAvatar(
+                                radius: 80,
+                                backgroundImage:
+                                    user.avatarUrl != null
+                                        ? Image.network(
+                                          'http://10.0.2.2:8000${user.avatarUrl}',
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Icon(
+                                              Icons.account_circle,
+                                              size: 80,
+                                              color: Colors.white,
+                                            );
+                                          },
+                                        ).image
+                                        : NetworkImage(
+                                          'https://i.pinimg.com/1200x/15/b2/dd/15b2dde4fae9ee8f9b748b8b2a832415.jpg',
+                                        ),
+                              ),
+                            ),
                           ),
-                          shape: BoxShape.circle,
+                        ],
+                      );
+                    } else if (state is UserError) {
+                      return Center(
+                        child: Text(
+                          'Error: ${state.message}',
+                          style: TextStyle(color: Colors.red),
                         ),
-                        child: CircleAvatar(
-                          radius: 80,
-                          backgroundImage: NetworkImage(
-                            'https://i.pinimg.com/1200x/15/b2/dd/15b2dde4fae9ee8f9b748b8b2a832415.jpg',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                      );
+                    } else if (state is UserLoading) {
+                      return Center(child: CircularProgressIndicator());
+                    } else {
+                      return SizedBox.shrink();
+                    }
+                  },
                 ),
+                SizedBox(height: 24),
                 Card(
                   color: Colors.white,
                   elevation: 6.0,

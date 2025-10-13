@@ -10,6 +10,7 @@ import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
 import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/bloc/user/user_bloc.dart';
 import 'package:heaven_book_app/services/book_service.dart';
 import 'package:heaven_book_app/services/cart_service.dart';
 import 'package:heaven_book_app/screens/Auth/active_screen.dart';
@@ -56,6 +57,7 @@ void main() {
           create: (_) => BookBloc(bookRepository)..add(LoadBooks()),
         ),
         BlocProvider<AuthBloc>(create: (_) => AuthBloc(authService)),
+        BlocProvider<UserBloc>(create: (_) => UserBloc(authService)),
         BlocProvider<CartBloc>(
           create:
               (_) => CartBloc(cartRepository, bookRepository)..add(LoadCart()),
@@ -67,7 +69,6 @@ void main() {
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthLoggedOut) {
-            // Chuyển về màn hình login
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/init', (route) => false);

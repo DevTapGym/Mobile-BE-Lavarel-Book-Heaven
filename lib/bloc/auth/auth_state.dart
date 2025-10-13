@@ -48,15 +48,6 @@ class ActivationCodeSent extends AuthState {
   List<Object?> get props => [message];
 }
 
-class ActivationCodeVerified extends AuthState {
-  final String message;
-
-  ActivationCodeVerified({required this.message});
-
-  @override
-  List<Object?> get props => [message];
-}
-
 class ForgotPasswordSuccess extends AuthState {
   final String message;
 

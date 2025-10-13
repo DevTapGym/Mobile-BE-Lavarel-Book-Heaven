@@ -21,12 +21,14 @@ class BookBloc extends Bloc<BookEvent, BookState> {
       final saleOffBooks = await bookService.getSaleOffBooks();
       final bestSellingBooks = await bookService.getBestSellingBooksInYear();
       final bannerBooks = await bookService.getBannerBooks();
+      final randomBooks = await bookService.getRandomBooks();
       emit(
         BookLoaded(
           popularBooks: popularBooks,
           saleOffBooks: saleOffBooks,
           bestSellingBooks: bestSellingBooks,
           bannerBooks: bannerBooks,
+          randomBooks: randomBooks,
         ),
       );
     } catch (e) {

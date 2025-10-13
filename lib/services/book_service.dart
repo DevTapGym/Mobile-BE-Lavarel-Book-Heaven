@@ -32,6 +32,30 @@ class BookService {
     }
   }
 
+  Future<List<Book>> getRandomBooks() async {
+    try {
+      final response = await apiClient.publicDio.get('/book/random');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic> && data['data'] is List) {
+          final List<dynamic> list = data['data'];
+          return list
+              .map((e) => Book.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        } else {
+          throw Exception('Invalid API response format');
+        }
+      } else {
+        throw Exception(
+          'Failed to load books (status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error loading books: $e');
+    }
+  }
+
   Future<Book> getBookDetail(int id) async {
     try {
       final response = await apiClient.publicDio.get('/book/$id');

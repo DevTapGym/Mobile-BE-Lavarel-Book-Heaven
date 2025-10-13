@@ -120,11 +120,11 @@ class _ActiveScreenState extends State<ActiveScreen> {
           );
 
           Navigator.pop(context);
-        } else if (state is ActivationCodeVerified) {
+        } else if (state is AuthSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                state.message,
+                'Kích hoạt tài khoản thành công!',
                 style: const TextStyle(fontSize: 16),
               ),
               backgroundColor: Colors.green,
