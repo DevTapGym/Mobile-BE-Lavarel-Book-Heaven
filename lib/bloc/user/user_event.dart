@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 
 abstract class UserEvent extends Equatable {
@@ -6,6 +8,15 @@ abstract class UserEvent extends Equatable {
 }
 
 class LoadUserInfo extends UserEvent {}
+
+class ChangeAvatar extends UserEvent {
+  final File avatarPath;
+
+  ChangeAvatar({required this.avatarPath});
+
+  @override
+  List<Object?> get props => [avatarPath];
+}
 
 class UpdateUser extends UserEvent {
   final String name;

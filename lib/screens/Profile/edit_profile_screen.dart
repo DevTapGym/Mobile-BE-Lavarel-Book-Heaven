@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/user/user_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:heaven_book_app/widgets/appbar_custom_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/widgets/textfield_custom_widget.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,7 +22,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   TextEditingController phoneController = TextEditingController();
   TextEditingController dateOfBirthController = TextEditingController();
   String? selectedGender;
+  String? imageUrl;
   String dateOfBirthForServer = '';
+  File? selectedImageFile;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -50,6 +55,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       nameController.text = user.name;
       selectedGender = user.gender;
       phoneController.text = user.phone ?? '';
+      imageUrl = user.avatarUrl;
 
       if (user.dateOfBirth != null) {
         dateOfBirthController.text = DateFormat(
@@ -114,6 +120,155 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  ImageProvider _getAvatarImage() {
+    // Ưu tiên hiển thị ảnh được chọn từ máy
+    if (selectedImageFile != null) {
+      return FileImage(selectedImageFile!);
+    }
+
+    // Sau đó hiển thị ảnh từ server
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      return NetworkImage('http://10.0.2.2:8000$imageUrl');
+    }
+
+    // Default avatar nếu không có ảnh
+    return NetworkImage(
+      'https://i.pinimg.com/1200x/15/b2/dd/15b2dde4fae9ee8f9b748b8b2a832415.jpg',
+    );
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      showModalBottomSheet(
+        context: context,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (BuildContext context) {
+          return Container(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Chọn ảnh đại diện',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImageSourceOption(
+                      icon: Icons.photo_library,
+                      title: 'Thư viện',
+                      onTap: () => _getImage(ImageSource.gallery),
+                    ),
+                    _buildImageSourceOption(
+                      icon: Icons.camera_alt,
+                      title: 'Camera',
+                      onTap: () => _getImage(ImageSource.camera),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi chọn ảnh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary, width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 40, color: AppColors.primary),
+            SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _getImage(ImageSource source) async {
+    try {
+      if (!mounted) return;
+      Navigator.pop(context); // Đóng bottom sheet
+
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null && mounted) {
+        setState(() {
+          selectedImageFile = File(pickedFile.path);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Ảnh đã được chọn. Nhấn "Cập nhật" để lưu.'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi chọn ảnh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<UserBloc, UserState>(
@@ -132,6 +287,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
         if (state is UserLoaded) {
           _loadUserData();
+
+          // Reset selected image sau khi update thành công
+          if (selectedImageFile != null) {
+            setState(() {
+              selectedImageFile = null;
+            });
+          }
 
           if (state.message != null) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -278,9 +440,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                               child: CircleAvatar(
                                 radius: 80,
-                                backgroundImage: NetworkImage(
-                                  'https://i.pinimg.com/1200x/15/b2/dd/15b2dde4fae9ee8f9b748b8b2a832415.jpg',
-                                ),
+                                backgroundImage: _getAvatarImage(),
                               ),
                             ),
                           ),
@@ -304,11 +464,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                             child: IconButton(
                               icon: Icon(
-                                Icons.settings,
+                                Icons.camera_alt,
                                 color: Colors.white,
                                 size: 28,
                               ),
-                              onPressed: () {},
+                              onPressed: _pickImage,
                             ),
                           ),
                         ],
@@ -320,6 +480,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
                     child: ElevatedButton(
                       onPressed: () {
+                        // Cập nhật thông tin user
                         context.read<UserBloc>().add(
                           UpdateUser(
                             name: nameController.text,
@@ -328,6 +489,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             gender: selectedGender ?? '',
                           ),
                         );
+
+                        // Nếu có ảnh mới được chọn, cập nhật avatar
+                        if (selectedImageFile != null) {
+                          context.read<UserBloc>().add(
+                            ChangeAvatar(avatarPath: selectedImageFile!),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         minimumSize: Size(double.infinity, 50),
@@ -406,6 +574,8 @@ class _DatePickerCustomWidgetState extends State<DatePickerCustomWidget> {
                   color: Colors.black54,
                 ),
                 onPressed: () async {
+                  if (!mounted) return;
+
                   DateTime? pickedDate = await showDatePicker(
                     context: context,
                     initialDate: DateFormat('dd-MM-yyyy').parse(
@@ -416,7 +586,8 @@ class _DatePickerCustomWidgetState extends State<DatePickerCustomWidget> {
                     firstDate: DateTime(1900),
                     lastDate: DateTime.now(),
                   );
-                  if (pickedDate != null) {
+
+                  if (pickedDate != null && mounted) {
                     setState(() {
                       widget.controller.text =
                           "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";

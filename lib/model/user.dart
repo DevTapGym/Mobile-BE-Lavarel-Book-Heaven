@@ -23,7 +23,7 @@ class User {
       isActive: (json['is_active'] ?? 0) == 1,
       email: json['email'],
       phone: json['phone'],
-      avatarUrl: json['avatarUrl'],
+      avatarUrl: json['avatar'],
       gender: json['gender'],
       dateOfBirth:
           json['date_of_birth'] != null

@@ -11,6 +11,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<LoadUserInfo>(_onLoadUserInfo);
     on<ChangePassword>(_onChangePassword);
     on<UpdateUser>(_onUpdateUser);
+    on<ChangeAvatar>(_onChangeAvatar);
   }
 
   Future<void> _onLoadUserInfo(
@@ -68,6 +69,24 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       } else {
         emit(UserError("Failed to update user information"));
       }
+    } catch (e) {
+      emit(UserError(e.toString()));
+    }
+  }
+
+  Future<void> _onChangeAvatar(
+    ChangeAvatar event,
+    Emitter<UserState> emit,
+  ) async {
+    emit(UserLoading());
+    try {
+      final updatedUser = await authService.uploadAvatar(event.avatarPath);
+      emit(
+        UserLoaded(
+          userData: updatedUser,
+          message: "Avatar changed successfully",
+        ),
+      );
     } catch (e) {
       emit(UserError(e.toString()));
     }

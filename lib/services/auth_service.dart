@@ -19,10 +19,9 @@ class AuthService {
     apiClient = ApiClient(_secureStorage, this);
   }
 
-  Future<User> uploadAvatar(int userId, File imageFile) async {
+  Future<User> uploadAvatar(File imageFile) async {
     try {
       final formData = FormData.fromMap({
-        'user_id': userId,
         'image': await MultipartFile.fromFile(
           imageFile.path,
           filename: imageFile.path.split('/').last,
