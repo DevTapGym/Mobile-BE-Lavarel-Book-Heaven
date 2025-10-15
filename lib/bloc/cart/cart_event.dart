@@ -7,6 +7,16 @@ abstract class CartEvent extends Equatable {
 
 class LoadCart extends CartEvent {}
 
+class ToggleCartItemSelection extends CartEvent {
+  final int cartItemId;
+  final bool isSelected;
+
+  ToggleCartItemSelection(this.cartItemId, this.isSelected);
+
+  @override
+  List<Object?> get props => [cartItemId, isSelected];
+}
+
 class UpdateCartItemQuantity extends CartEvent {
   final int cartItemId;
   final int newQuantity;

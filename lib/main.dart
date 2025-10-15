@@ -8,8 +8,8 @@ import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
-import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/bloc/order/order_bloc.dart';
 import 'package:heaven_book_app/bloc/user/user_bloc.dart';
 import 'package:heaven_book_app/services/book_service.dart';
 import 'package:heaven_book_app/services/cart_service.dart';
@@ -37,6 +37,7 @@ import 'package:heaven_book_app/screens/Profile/shipping_address_screen.dart';
 import 'package:heaven_book_app/services/address_service.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
+import 'package:heaven_book_app/services/order_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
@@ -49,6 +50,7 @@ void main() {
   final cartRepository = CartService(apiClient);
   final bookRepository = BookService(apiClient);
   final addressService = AddressService(apiClient);
+  final orderService = OrderService(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -59,12 +61,12 @@ void main() {
         BlocProvider<AuthBloc>(create: (_) => AuthBloc(authService)),
         BlocProvider<UserBloc>(create: (_) => UserBloc(authService)),
         BlocProvider<CartBloc>(
-          create:
-              (_) => CartBloc(cartRepository, bookRepository)..add(LoadCart()),
+          create: (_) => CartBloc(cartRepository, bookRepository),
         ),
         BlocProvider<AddressBloc>(
           create: (_) => AddressBloc(addressService)..add(LoadAddresses()),
         ),
+        BlocProvider<OrderBloc>(create: (_) => OrderBloc(orderService)),
       ],
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {

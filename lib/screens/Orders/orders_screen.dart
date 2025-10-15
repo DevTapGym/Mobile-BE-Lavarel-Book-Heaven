@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/order/order_bloc.dart';
+import 'package:heaven_book_app/bloc/order/order_event.dart';
+import 'package:heaven_book_app/bloc/order/order_state.dart';
+import 'package:heaven_book_app/model/order.dart';
+import 'package:heaven_book_app/model/order_item.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
 import '../../themes/app_colors.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -17,13 +24,16 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   // Date range filter variables
   DateTimeRange? _selectedDateRange;
-  List<Map<String, dynamic>> _filteredOrders = [];
+  List<Order> _filteredOrders = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
-    _filteredOrders = List.from(allOrders);
+    _tabController = TabController(length: 7, vsync: this);
+    _filteredOrders = [];
+
+    // Load orders when screen initializes
+    context.read<OrderBloc>().add(LoadAllOrders());
   }
 
   @override
@@ -32,77 +42,31 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
-  // Hardcoded order data
-  final List<Map<String, dynamic>> allOrders = [
-    {
-      'id': 'ORD-001',
-      'status': 'Processing',
-      'date': '2024-08-10',
-      'total': 45.99,
-      'items': [
-        {'title': 'The Great Gatsby', 'price': 12.99, 'quantity': 1},
-        {'title': 'To Kill a Mockingbird', 'price': 15.99, 'quantity': 1},
-        {'title': '1984', 'price': 17.01, 'quantity': 1},
-      ],
-    },
-    {
-      'id': 'ORD-003',
-      'status': 'Delivered',
-      'date': '2024-08-05',
-      'total': 28.97,
-      'items': [
-        {'title': 'Pride and Prejudice', 'price': 13.99, 'quantity': 1},
-        {'title': 'The Catcher in the Rye', 'price': 14.98, 'quantity': 1},
-      ],
-    },
-    {
-      'id': 'ORD-004',
-      'status': 'Cancelled',
-      'date': '2024-08-03',
-      'total': 19.99,
-      'items': [
-        {'title': 'Lord of the Flies', 'price': 19.99, 'quantity': 1},
-      ],
-    },
-    {
-      'id': 'ORD-005',
-      'status': 'Delivered',
-      'date': '2024-08-01',
-      'total': 67.95,
-      'items': [
-        {'title': 'Dune', 'price': 22.99, 'quantity': 1},
-        {'title': 'Foundation', 'price': 21.99, 'quantity': 1},
-        {'title': 'Ender\'s Game', 'price': 22.97, 'quantity': 1},
-      ],
-    },
-  ];
-
-  List<Map<String, dynamic>> getOrdersByStatus(String status) {
-    final ordersToFilter =
-        _selectedDateRange != null ? _filteredOrders : allOrders;
-    return ordersToFilter.where((order) => order['status'] == status).toList();
+  List<Order> getOrdersByStatus(String status) {
+    return _filteredOrders.where((order) {
+      if (order.statusHistory.isEmpty) return false;
+      // Lấy trạng thái mới nhất
+      final latestStatus = order.statusHistory.last.name.toLowerCase();
+      return latestStatus == status.toLowerCase();
+    }).toList();
   }
 
-  List<Map<String, dynamic>> _getOrdersForTab(String tab) {
+  List<Order> _getOrdersForTab(String tab) {
     switch (tab) {
+      case 'Pending':
+        return getOrdersByStatus('Pending');
+      case 'Processing':
+        return getOrdersByStatus('Processing');
       case 'Shipping':
         return getOrdersByStatus('Shipped');
       case 'Delivered':
         return getOrdersByStatus('Delivered');
       case 'Canceled':
-        final ordersToFilter =
-            _selectedDateRange != null ? _filteredOrders : allOrders;
-        return ordersToFilter
-            .where(
-              (order) =>
-                  (order['status'] as String).toLowerCase() == 'canceled' ||
-                  (order['status'] as String).toLowerCase() == 'cancelled',
-            )
-            .toList();
-      case 'Return':
-        return getOrdersByStatus('Return');
+        return getOrdersByStatus('Cancelled');
+      case 'Returned':
+        return getOrdersByStatus('Returned');
       default:
-        return _selectedDateRange != null ? _filteredOrders : allOrders;
+        return _filteredOrders;
     }
   }
 
@@ -461,27 +425,95 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   void _filterOrdersByDateRange() {
     if (_selectedDateRange == null) {
-      _filteredOrders = List.from(allOrders);
+      debugPrint('❌ No date range selected');
       return;
     }
 
-    _filteredOrders =
-        allOrders.where((order) {
-          final orderDate = DateTime.parse(order['date']);
-          return orderDate.isAfter(
-                _selectedDateRange!.start.subtract(const Duration(days: 1)),
-              ) &&
-              orderDate.isBefore(
-                _selectedDateRange!.end.add(const Duration(days: 1)),
-              );
+    debugPrint('🔍 Filtering orders by date range:');
+    debugPrint(
+      '  📅 Start: ${_selectedDateRange!.start.toString().split(' ')[0]}',
+    );
+    debugPrint('  📅 End: ${_selectedDateRange!.end.toString().split(' ')[0]}');
+
+    // Trigger rebuild to apply the filter
+    // The actual filtering logic is handled in _applyDateFilter method
+    // which is called from BlocBuilder when state changes
+    setState(() {
+      // This will cause the UI to rebuild and _applyDateFilter will be called
+      debugPrint('🔄 Triggering UI rebuild with date filter...');
+    });
+
+    debugPrint('✅ Date filter applied successfully');
+  }
+
+  List<Order> _applyDateFilter(List<Order> orders) {
+    if (_selectedDateRange == null) {
+      debugPrint('📋 No date filter - returning all ${orders.length} orders');
+      return orders;
+    }
+
+    // Normalize dates to start and end of day for accurate comparison
+    final startDate = DateTime(
+      _selectedDateRange!.start.year,
+      _selectedDateRange!.start.month,
+      _selectedDateRange!.start.day,
+    );
+
+    final endDate = DateTime(
+      _selectedDateRange!.end.year,
+      _selectedDateRange!.end.month,
+      _selectedDateRange!.end.day,
+      23,
+      59,
+      59,
+      999, // End of day
+    );
+
+    debugPrint('📅 Applying date filter:');
+    debugPrint('  🟢 Start: ${startDate.toString().split(' ')[0]}');
+    debugPrint('  🔴 End: ${endDate.toString().split(' ')[0]}');
+    debugPrint('  📊 Total orders to filter: ${orders.length}');
+
+    final filteredOrders =
+        orders.where((order) {
+          // Normalize order date to start of day for comparison
+          final orderDateOnly = DateTime(
+            order.orderDate.year,
+            order.orderDate.month,
+            order.orderDate.day,
+          );
+
+          final isInRange =
+              orderDateOnly.isAtSameMomentAs(startDate) ||
+              orderDateOnly.isAtSameMomentAs(endDate) ||
+              (orderDateOnly.isAfter(startDate) &&
+                  orderDateOnly.isBefore(endDate));
+
+          if (isInRange) {
+            debugPrint(
+              '  ✅ Order ${order.orderNumber} - ${orderDateOnly.toString().split(' ')[0]} (included)',
+            );
+          } else {
+            debugPrint(
+              '  ❌ Order ${order.orderNumber} - ${orderDateOnly.toString().split(' ')[0]} (excluded)',
+            );
+          }
+
+          return isInRange;
         }).toList();
+
+    debugPrint(
+      '📈 Filter result: ${filteredOrders.length}/${orders.length} orders match criteria',
+    );
+    return filteredOrders;
   }
 
   void _clearDateFilter() {
+    debugPrint('🗑️ Clearing date filter...');
     setState(() {
       _selectedDateRange = null;
-      _filteredOrders = List.from(allOrders);
     });
+    debugPrint('✅ Date filter cleared - showing all orders');
   }
 
   Widget _buildDateFilterChip() {
@@ -559,60 +591,100 @@ class _OrdersScreenState extends State<OrdersScreen>
           const SizedBox(width: 8),
         ],
       ),
-      body: Container(
-        color: AppColors.background,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Material(
-              color: AppColors.primary,
-              child: TabBar(
-                controller: _tabController,
-                indicatorColor: AppColors.background,
-                labelColor: AppColors.background,
-                unselectedLabelColor: Colors.white60,
-                isScrollable: true,
-                tabs: [
-                  const Tab(child: Text('All', style: TextStyle(fontSize: 16))),
-                  const Tab(
-                    child: Text('Shipping', style: TextStyle(fontSize: 16)),
-                  ),
-                  const Tab(
-                    child: Text('Delivered', style: TextStyle(fontSize: 16)),
-                  ),
-                  const Tab(
-                    child: Text('Canceled', style: TextStyle(fontSize: 16)),
-                  ),
-                  const Tab(
-                    child: Text('Return', style: TextStyle(fontSize: 16)),
-                  ),
-                ],
-              ),
-            ),
+      body: BlocBuilder<OrderBloc, OrderState>(
+        builder: (context, state) {
+          if (state is OrderLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            // Date filter chip
-            _buildDateFilterChip(),
-
-            // Tab bar view
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildOrderList(_getOrdersForTab('All')),
-                  _buildOrderList(_getOrdersForTab('Shipping')),
-                  _buildOrderList(_getOrdersForTab('Delivered')),
-                  _buildOrderList(_getOrdersForTab('Canceled')),
-                  _buildOrderList(_getOrdersForTab('Return')),
-                ],
+          if (state is OrderError) {
+            return Center(
+              child: Text(
+                'Error loading orders: ${state.message}',
+                style: const TextStyle(color: Colors.red),
               ),
+            );
+          }
+
+          if (state is OrderLoaded) {
+            _filteredOrders =
+                _selectedDateRange != null
+                    ? _applyDateFilter(state.orders)
+                    : state.orders;
+          }
+
+          return Container(
+            color: AppColors.background,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Material(
+                  color: AppColors.primary,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: AppColors.background,
+                    labelColor: AppColors.background,
+                    unselectedLabelColor: Colors.white60,
+                    isScrollable: true,
+                    tabs: [
+                      const Tab(
+                        child: Text('All', style: TextStyle(fontSize: 16)),
+                      ),
+                      const Tab(
+                        child: Text('Pending', style: TextStyle(fontSize: 16)),
+                      ),
+                      const Tab(
+                        child: Text(
+                          'Processing',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      const Tab(
+                        child: Text('Shipping', style: TextStyle(fontSize: 16)),
+                      ),
+                      const Tab(
+                        child: Text(
+                          'Delivered',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      const Tab(
+                        child: Text('Canceled', style: TextStyle(fontSize: 16)),
+                      ),
+                      const Tab(
+                        child: Text('Returned', style: TextStyle(fontSize: 16)),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Date filter chip
+                _buildDateFilterChip(),
+
+                // Tab bar view
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildOrderList(_getOrdersForTab('All')),
+                      _buildOrderList(_getOrdersForTab('Pending')),
+                      _buildOrderList(_getOrdersForTab('Processing')),
+                      _buildOrderList(_getOrdersForTab('Shipping')),
+                      _buildOrderList(_getOrdersForTab('Delivered')),
+                      _buildOrderList(_getOrdersForTab('Canceled')),
+                      _buildOrderList(_getOrdersForTab('Returned')),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildOrderList(List<Map<String, dynamic>> orders) {
+  Widget _buildOrderList(List<Order> orders) {
     if (orders.isEmpty) {
       return Center(
         child: Padding(
@@ -710,10 +782,9 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
-    final isExpanded = expandedOrders.contains(order['id']);
-    final items = order['items'] as List;
-    final itemsToShow = isExpanded ? items : items.take(1).toList();
+  Widget _buildOrderCard(Order order) {
+    final isExpanded = expandedOrders.contains(order.orderNumber);
+    final itemsToShow = isExpanded ? order.items : [order.items.first];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -738,35 +809,34 @@ class _OrdersScreenState extends State<OrdersScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Order ${order['id']}',
+                  'Order ${order.orderNumber}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                _buildStatusChip(order['status']),
+                _buildStatusChip(order.statusHistory.last.name),
               ],
             ),
             Text(
-              'Date: ${order['date']}',
+              'Date: ${order.orderDate.day}/${order.orderDate.month}/${order.orderDate.year} at ${order.orderDate.hour}:${order.orderDate.minute.toString().padLeft(2, '0')}',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             const SizedBox(height: 20),
 
-            // Order Items (show only first item or all items based on expansion)
             ...itemsToShow.map<Widget>((item) => _buildOrderItem(item)),
 
             // Show More/Less button if more than 1 item
-            if (items.length > 1)
+            if (order.items.length > 1)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: GestureDetector(
                   onTap: () {
                     setState(() {
                       if (isExpanded) {
-                        expandedOrders.remove(order['id']);
+                        expandedOrders.remove(order.orderNumber);
                       } else {
-                        expandedOrders.add(order['id']);
+                        expandedOrders.add(order.orderNumber);
                       }
                     });
                   },
@@ -781,7 +851,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       Text(
                         isExpanded
                             ? 'Show Less'
-                            : 'Show More (${items.length - 1} more items)',
+                            : 'Show More (${order.items.length - 1} more items)',
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontSize: 14,
@@ -804,7 +874,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '\$${order['total'].toStringAsFixed(2)}',
+                  FormatPrice.formatPrice(order.totalAmount),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -829,19 +899,26 @@ class _OrdersScreenState extends State<OrdersScreen>
                       );
                     },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
+                      side: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: const Text(
                       'View Details',
-                      style: TextStyle(color: AppColors.primary),
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                if (order['status'] == 'Delivered')
+                if (order.statusHistory.last.name == 'Delivered')
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {},
@@ -857,7 +934,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                     ),
                   ),
-                if (order['status'] == 'Processing')
+                if (order.statusHistory.last.name == 'Processing')
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {},
@@ -881,7 +958,7 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildOrderItem(Map<String, dynamic> item) {
+  Widget _buildOrderItem(OrderItem item) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -908,7 +985,7 @@ class _OrdersScreenState extends State<OrdersScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['title'],
+                  item.bookTitle,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -916,7 +993,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Qty: ${item['quantity']} × \$${item['price'].toStringAsFixed(2)}',
+                  'Qty: ${item.quantity} x ${FormatPrice.formatPrice(item.unitPrice)}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -932,10 +1009,8 @@ class _OrdersScreenState extends State<OrdersScreen>
     Color textColor;
 
     switch (status) {
+      case 'Pending':
       case 'Processing':
-        backgroundColor = Colors.orange.shade100;
-        textColor = Colors.orange.shade700;
-        break;
       case 'Shipped':
         backgroundColor = Colors.blue.shade100;
         textColor = Colors.blue.shade700;

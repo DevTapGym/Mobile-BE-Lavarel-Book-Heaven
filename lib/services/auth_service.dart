@@ -125,7 +125,7 @@ class AuthService {
       final response = await apiClient.privateDio.get('/auth/me');
 
       if (response.statusCode == 200 && response.data['data'] != null) {
-        final userJson = response.data['data'];
+        final userJson = response.data['data']['account'];
         return User.fromJson(userJson);
       } else {
         throw Exception('Không thể lấy thông tin người dùng');
@@ -179,7 +179,7 @@ class AuthService {
         }
 
         // Lưu trạng thái user
-        final userData = data['user'] ?? data['account'] ?? {};
+        final userData = data['account'] ?? {};
         final isActiveValue = userData['is_active'] ?? 0;
         await _secureStorage.write(
           key: 'is_active',
@@ -215,7 +215,7 @@ class AuthService {
         throw Exception('Không tìm thấy refresh token trong SecureStorage');
       }
 
-      final response = await apiClient.publicDio.post(
+      final response = await apiClient.publicDio.get(
         '/auth/refresh',
         options: Options(headers: {'Cookie': 'refresh_token=$refreshToken'}),
       );
@@ -323,7 +323,7 @@ class AuthService {
       final response = await apiClient.publicDio.post(
         '/auth/register',
         data: {
-          "name": name,
+          "username": name,
           "email": email,
           "password": password,
           "password_confirmation": passwordConfirmation,

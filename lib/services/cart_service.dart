@@ -35,6 +35,27 @@ class CartService {
     }
   }
 
+  Future<void> toggleCartItem(int cartItemId, bool isSelect) async {
+    try {
+      final response = await apiClient.privateDio.put(
+        '/cart/item/toggle-is-select',
+        data: {'is_selected': isSelect, 'cart_item_id': cartItemId},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to toggle cart item (status: ${response.statusCode})',
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('DioException in toggleCartItem: $e');
+      rethrow;
+    } catch (e) {
+      debugPrint('Error in toggleCartItem: $e');
+      throw Exception('Error toggling cart item: $e');
+    }
+  }
+
   Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
     try {
       final response = await apiClient.privateDio.put(

@@ -18,10 +18,10 @@ class Address {
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
       id: json['id'],
-      recipientName: json['recipient_name'],
+      recipientName: json['recipient_name'] ?? '',
       address: json['address'],
       phoneNumber: json['phone_number'],
-      isDefault: json['is_default'],
+      isDefault: json['is_default'] ?? 1,
       tagName: json['tag_name'],
     );
   }

@@ -19,10 +19,10 @@ class Payment {
     return Payment(
       id: json['id'],
       name: json['name'],
-      isActive: json['is_active'],
-      provider: json['provider'],
-      type: json['type'],
-      imageUrl: json['logo_url'],
+      isActive: json['is_active'] ?? 1,
+      provider: json['provider'] ?? '',
+      type: json['type'] ?? '',
+      imageUrl: json['logo_url'] ?? '',
     );
   }
 }

@@ -13,6 +13,29 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<UpdateCartItemQuantity>(_onUpdateCartItemQuantity);
     on<AddToCart>(_onAddToCart);
     on<RemoveCartItem>(_onRemoveCartItem);
+    on<ToggleCartItemSelection>(_onToggleCartItemSelection);
+  }
+
+  Future<void> _onToggleCartItemSelection(
+    ToggleCartItemSelection event,
+    Emitter<CartState> emit,
+  ) async {
+    if (state is CartLoaded) {
+      final currentState = state as CartLoaded;
+      emit(CartLoading());
+      try {
+        await _cartService.toggleCartItem(event.cartItemId, event.isSelected);
+        final updatedCart = await _cartService.getMyCart();
+        emit(
+          CartLoaded(
+            cart: updatedCart,
+            relatedBooks: currentState.relatedBooks,
+          ),
+        );
+      } catch (e) {
+        emit(CartError(e.toString()));
+      }
+    }
   }
 
   Future<void> _onLoadCart(LoadCart event, Emitter<CartState> emit) async {
@@ -20,9 +43,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     try {
       final cart = await _cartService.getMyCart();
       final relatedBooks = await _bookService.getBooksByCategory(
-        cart.items.isNotEmpty ? cart.items.first.bookId : 0,
+        cart.items.isNotEmpty ? cart.items.first.categoryId : 1,
       );
-      emit(CartLoaded(cart: cart, relatedBooks: relatedBooks));
+
+      // Lấy danh sách ID các sách trong giỏ
+      final cartBookIds = cart.items.map((item) => item.bookId).toSet();
+
+      // Lọc bỏ những sách có id trùng với trong giỏ
+      final filteredRelatedBooks =
+          relatedBooks.where((book) => !cartBookIds.contains(book.id)).toList();
+
+      emit(CartLoaded(cart: cart, relatedBooks: filteredRelatedBooks));
     } catch (e) {
       emit(CartError(e.toString()));
     }
