@@ -13,7 +13,7 @@ class CategoryService {
   }) async {
     try {
       final response = await apiClient.publicDio.get(
-        '/category',
+        '/categories/page',
         queryParameters: {'page': page, 'pageSize': pageSize},
       );
 

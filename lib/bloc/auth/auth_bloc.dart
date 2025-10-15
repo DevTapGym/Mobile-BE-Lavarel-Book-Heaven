@@ -49,6 +49,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final token = result['token'] as String;
         final isActive = result['isActive'] as bool;
 
+        if (isActive) {
+          emit(AuthSuccess(token: token, isActive: isActive));
+          return;
+        }
         emit(AuthSuccess(token: token, isActive: isActive));
       } catch (e) {
         emit(AuthFailure(e.toString()));
@@ -59,21 +63,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
 
       try {
-        final refreshToken = await authService.getRefreshToken();
+        if (event.isTokenExpired) {
+          // Nếu token đã hết hạn, không cần kiểm tra lại
+          final refreshToken = await authService.getRefreshToken();
 
-        if (refreshToken != null && refreshToken.isNotEmpty) {
-          final result = await authService.refreshToken();
+          if (refreshToken != null && refreshToken.isNotEmpty) {
+            final result = await authService.refreshToken();
 
-          final token = result['token'] as String;
-          final isActive = result['isActive'] as bool;
+            final token = result['token'] as String;
+            final isActive = result['isActive'] as bool;
 
-          emit(AuthSuccess(token: token, isActive: isActive));
-          return;
+            emit(AuthSuccess(token: token, isActive: isActive));
+            return;
+          }
+          emit(AuthFailure('Cần đăng nhập lại'));
+        } else {
+          final accessToken = await secureStorage.read(key: 'access_token');
+          final isActive = await secureStorage.read(key: 'is_active');
+          if (accessToken == null || isActive == null) {
+            emit(AuthFailure('Cần đăng nhập lại'));
+            return;
+          }
+
+          emit(
+            AuthSuccess(token: accessToken, isActive: isActive.contains('1')),
+          );
         }
-
-        emit(AuthFailure('Cần đăng nhập lại'));
       } catch (e) {
-        emit(AuthFailure('Auto login thất bại: ${e.toString()}'));
+        emit(AuthLoggedOut());
       }
     });
 
@@ -111,11 +128,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       try {
         await authService.verifyActivationCode(event.code);
-        emit(
-          ActivationCodeVerified(
-            message: 'Tài khoản đã được kích hoạt thành công!',
-          ),
-        );
+
+        final token = await secureStorage.read(key: 'access_token');
+
+        emit(AuthSuccess(token: token!, isActive: true));
       } catch (e) {
         emit(AuthFailure('Mã kích hoạt không hợp lệ: ${e.toString()}'));
       }

@@ -25,6 +25,14 @@ class _InitScreenState extends State<InitScreen> {
 
   Future<void> _checkAutoLogin() async {
     try {
+      //Case 0: Mới đăng xuất hoặc đổi mật khẩu -> Login
+      final currentAuthState = context.read<AuthBloc>().state;
+      if (currentAuthState is AuthLoggedOut) {
+        debugPrint('❌ [InitScreen] Mới đăng xuất hoặc đổi mật khẩu → Login');
+        _navigateToLogin();
+        return;
+      }
+
       final accessToken = await _secureStorage.read(key: 'access_token');
       final isActive = await _secureStorage.read(key: 'is_active');
 
@@ -48,8 +56,11 @@ class _InitScreenState extends State<InitScreen> {
         debugPrint('⏰ [InitScreen] Token hết hạn → Thử refresh token');
         await _handleRefreshToken();
       } else {
-        debugPrint('✅ [InitScreen] Token còn hạn → Main');
-        _navigateToMain();
+        if (mounted) {
+          context.read<AuthBloc>().add(AppStarted(isTokenExpired: true));
+          debugPrint('✅ [InitScreen] Token còn hạn → Main');
+          _navigateToMain();
+        }
       }
     } catch (e) {
       debugPrint('🚨 [InitScreen] Lỗi kiểm tra auto login: $e → Login');
@@ -64,13 +75,12 @@ class _InitScreenState extends State<InitScreen> {
       final authBloc = context.read<AuthBloc>();
 
       // Dispatch refresh token event
-      authBloc.add(AppStarted());
+      authBloc.add(AppStarted(isTokenExpired: true));
 
       // Wait for the next state that's not loading
       final result = await authBloc.stream
-          .where((state) => state is! AuthLoading)
-          .first
-          .timeout(const Duration(seconds: 30));
+          .firstWhere((state) => state is! AuthLoading)
+          .timeout(const Duration(seconds: 10));
 
       if (result is AuthSuccess) {
         debugPrint(
@@ -79,8 +89,8 @@ class _InitScreenState extends State<InitScreen> {
         if (mounted) {
           _navigateToMain();
         }
-      } else if (result is AuthFailure) {
-        debugPrint('❌ [InitScreen] Refresh token thất bại: ${result.message}');
+      } else if (result is AuthLoggedOut) {
+        debugPrint('❌ [InitScreen] Refresh token thất bại → Login lại');
         if (mounted) {
           _navigateToLogin();
         }

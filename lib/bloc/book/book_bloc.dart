@@ -1,12 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'book_event.dart';
 import 'book_state.dart';
-import '../../repositories/book_repository.dart';
+import '../../services/book_service.dart';
 
 class BookBloc extends Bloc<BookEvent, BookState> {
-  final BookRepository _repository;
+  final BookService bookService;
 
-  BookBloc(this._repository) : super(BookInitial()) {
+  BookBloc(this.bookService) : super(BookInitial()) {
     on<LoadBooks>(_onLoadBooks);
     on<LoadSearchBooks>(_onLoadSearchBooks);
     on<LoadCategoryBooks>(_onLoadCategoryBooks);
@@ -17,16 +17,18 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   Future<void> _onLoadBooks(LoadBooks event, Emitter<BookState> emit) async {
     emit(BookLoading());
     try {
-      final popularBooks = await _repository.getPopularBooks();
-      final saleOffBooks = await _repository.getSaleOffBooks();
-      final bestSellingBooks = await _repository.getBestSellingBooksInYear();
-      final bannerBooks = await _repository.getBannerBooks();
+      final popularBooks = await bookService.getPopularBooks();
+      final saleOffBooks = await bookService.getSaleOffBooks();
+      final bestSellingBooks = await bookService.getBestSellingBooksInYear();
+      final bannerBooks = await bookService.getBannerBooks();
+      final randomBooks = await bookService.getRandomBooks();
       emit(
         BookLoaded(
           popularBooks: popularBooks,
           saleOffBooks: saleOffBooks,
           bestSellingBooks: bestSellingBooks,
           bannerBooks: bannerBooks,
+          randomBooks: randomBooks,
         ),
       );
     } catch (e) {
@@ -40,7 +42,7 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   ) async {
     emit(BookLoading());
     try {
-      final searchResults = await _repository.searchBooks(event.query);
+      final searchResults = await bookService.searchBooks(event.query);
       emit(BookSearchLoaded(searchResults));
     } catch (e) {
       emit(BookError(e.toString()));
@@ -53,7 +55,7 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   ) async {
     emit(BookLoading());
     try {
-      final categoryBooks = await _repository.getBooksByCategory(
+      final categoryBooks = await bookService.getBooksByCategory(
         event.categoryId,
       );
       emit(BookCategoryLoaded(categoryBooks));
@@ -68,7 +70,7 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   ) async {
     emit(BookLoading());
     try {
-      final allBooks = await _repository.getAllBooks();
+      final allBooks = await bookService.getAllBooks();
       emit(BookLoadAll(allBooks));
     } catch (e) {
       emit(BookError(e.toString()));
@@ -81,8 +83,8 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   ) async {
     emit(BookLoading());
     try {
-      final bookDetail = await _repository.getBookDetail(event.id);
-      final relatedBooks = await _repository.getBooksByCategory(
+      final bookDetail = await bookService.getBookDetail(event.id);
+      final relatedBooks = await bookService.getBooksByCategory(
         bookDetail.categories.first.id,
       );
       relatedBooks.removeWhere((book) => book.id == bookDetail.id);

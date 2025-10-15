@@ -260,6 +260,12 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    context.read<CartBloc>().add(LoadCart());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, state) {
@@ -353,6 +359,10 @@ class _CartScreenState extends State<CartScreen> {
                       setState(() {
                         for (var item in cartItems) {
                           item.isSelected = value!;
+
+                          context.read<CartBloc>().add(
+                            ToggleCartItemSelection(item.id, item.isSelected),
+                          );
                         }
                       });
                     },
@@ -526,10 +536,35 @@ class _CartScreenState extends State<CartScreen> {
           if (cartItems.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Text(
-                  'Your cart is empty.',
-                  style: TextStyle(fontSize: 18, color: Colors.black54),
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 80,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Your cart is empty',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Looks like you haven\'t added anything yet.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                  ],
                 ),
               ),
             );
@@ -583,6 +618,10 @@ class _CartScreenState extends State<CartScreen> {
                 setState(() {
                   items.isSelected = value!;
                 });
+
+                context.read<CartBloc>().add(
+                  ToggleCartItemSelection(items.id, items.isSelected),
+                );
               },
             ),
             SizedBox(width: 10),

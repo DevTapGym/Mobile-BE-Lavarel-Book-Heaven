@@ -114,15 +114,22 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.white),
-            SizedBox(width: 8),
-            Expanded(child: Text(message)),
+            Icon(Icons.error, color: Colors.white, size: 24),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
           ],
         ),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 4),
+        elevation: 8,
       ),
     );
   }
@@ -146,17 +153,27 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.check_circle_outline, color: Colors.white),
-                  SizedBox(width: 8),
-                  Expanded(child: Text('Address added successfully')),
+                  Icon(Icons.check_circle, color: Colors.white, size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Address added successfully!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 3),
+              elevation: 8,
             ),
           );
 
@@ -167,7 +184,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             }
           });
         } else if (state is AddressError) {
-          _showErrorSnackBar('Failed to add address: ${state.message}');
+          _showErrorSnackBar(state.message);
         }
       },
       child: Scaffold(

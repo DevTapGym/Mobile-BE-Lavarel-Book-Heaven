@@ -3,11 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:heaven_book_app/model/cart.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
-class CartRepository {
+class CartService {
   final ApiClient apiClient;
   int? _cartId;
 
-  CartRepository(this.apiClient);
+  CartService(this.apiClient);
 
   Future<Cart> getMyCart() async {
     try {
@@ -32,6 +32,27 @@ class CartRepository {
     } catch (e) {
       debugPrint('Error in getMyCart: $e');
       throw Exception('Error loading cart: $e');
+    }
+  }
+
+  Future<void> toggleCartItem(int cartItemId, bool isSelect) async {
+    try {
+      final response = await apiClient.privateDio.put(
+        '/cart/item/toggle-is-select',
+        data: {'is_selected': isSelect, 'cart_item_id': cartItemId},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to toggle cart item (status: ${response.statusCode})',
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint('DioException in toggleCartItem: $e');
+      rethrow;
+    } catch (e) {
+      debugPrint('Error in toggleCartItem: $e');
+      throw Exception('Error toggling cart item: $e');
     }
   }
 

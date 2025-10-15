@@ -44,12 +44,14 @@ class BookLoaded extends BookState {
   final List<Book> saleOffBooks;
   final List<Book> bestSellingBooks;
   final List<Book> bannerBooks;
+  final List<Book> randomBooks;
 
   BookLoaded({
     required this.popularBooks,
     required this.saleOffBooks,
     required this.bestSellingBooks,
     required this.bannerBooks,
+    required this.randomBooks,
   });
 
   @override

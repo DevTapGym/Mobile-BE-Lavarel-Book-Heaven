@@ -693,42 +693,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecommendedBooksSection() {
-    final List<Map<String, dynamic>> recommendedBooks = [
-      {
-        'title': 'Dune',
-        'author': 'Frank Herbert',
-        'price': '\$18.99',
-        'rating': 4.9,
-        'category': 'Science Fiction',
-        'reason': 'Based on your recent searches',
-        'discount': 15,
-        'image': Icons.rocket_launch,
-        'color': AppColors.primaryDark,
-      },
-      {
-        'title': 'The Midnight Library',
-        'author': 'Matt Haig',
-        'price': '\$14.99',
-        'rating': 4.7,
-        'category': 'Fiction',
-        'reason': 'Similar to your purchases',
-        'discount': 20,
-        'image': Icons.library_books,
-        'color': AppColors.primaryDark,
-      },
-      {
-        'title': 'Atomic Habits',
-        'author': 'James Clear',
-        'price': '\$16.99',
-        'rating': 4.8,
-        'category': 'Self-Help',
-        'reason': 'Trending in your interests',
-        'discount': 10,
-        'image': Icons.psychology,
-        'color': AppColors.primaryDark,
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -825,206 +789,281 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Books Grid
-        SizedBox(
-          height: 320,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: recommendedBooks.length,
-            padding: const EdgeInsets.only(right: 8),
-            itemBuilder: (context, index) {
-              final book = recommendedBooks[index];
-              return _buildRecommendedBookCard(book);
-            },
-          ),
+        BlocBuilder<BookBloc, BookState>(
+          builder: (context, state) {
+            if (state is BookLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is BookLoaded) {
+              return SizedBox(
+                height: 320,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: state.randomBooks.length,
+                  padding: const EdgeInsets.only(right: 8),
+                  itemBuilder: (context, index) {
+                    final book = state.randomBooks[index];
+                    return _buildRecommendedBookCard(book);
+                  },
+                ),
+              );
+            } else if (state is BookError) {
+              return Text('Lỗi: ${state.message}');
+            }
+            return const SizedBox.shrink();
+          },
         ),
       ],
     );
   }
 
-  Widget _buildRecommendedBookCard(Map<String, dynamic> book) {
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Book cover with discount badge
-          Stack(
-            children: [
-              Container(
-                height: 160,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      (book['color'] as Color).withValues(alpha: 0.3),
-                      (book['color'] as Color).withValues(alpha: 0.1),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    book['image'] as IconData,
-                    size: 60,
-                    color: book['color'] as Color,
-                  ),
-                ),
-              ),
-              // Discount badge
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+  Widget _buildRecommendedBookCard(Book book) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/detail', arguments: {'bookId': book.id});
+      },
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Book cover with discount badge
+            Stack(
+              children: [
+                Container(
+                  height: 160,
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '-${book['discount']}%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primaryDark.withValues(alpha: 0.3),
+                        AppColors.primaryDark.withValues(alpha: 0.1),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
                     ),
                   ),
-                ),
-              ),
-              // Favorite button
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.favorite_border,
-                      color: Colors.grey,
-                      size: 18,
-                    ),
-                    onPressed: () {},
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Book info
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Recommendation reason
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (book['color'] as Color).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      book['reason'] as String,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: book['color'] as Color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Book title
-                  Text(
-                    book['title'] as String,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.text,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-
-                  // Author and category
-                  Text(
-                    '${book['author']} • ${book['category']}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const Spacer(),
-
-                  // Rating and price
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        book['price'] as String,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            book['rating'].toString(),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.text,
+                  child:
+                      book.thumbnail.isNotEmpty
+                          ? ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                            child: Center(
+                              child: Image.network(
+                                'http://10.0.2.2:8000${book.thumbnail}',
+                                width: 120,
+                                height: 160,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (
+                                  context,
+                                  child,
+                                  loadingProgress,
+                                ) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 160,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          AppColors.primaryDark.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          AppColors.primaryDark.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                        ],
+                                      ),
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(20),
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 160,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          AppColors.primaryDark.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          AppColors.primaryDark.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                        ],
+                                      ),
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(20),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.book,
+                                        size: 60,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          )
+                          : Center(
+                            child: Icon(
+                              Icons.book,
+                              size: 60,
+                              color: AppColors.primaryDark,
                             ),
                           ),
-                        ],
+                ),
+                // Discount badge
+                if (book.saleOff > 0) ...[
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '-${book.saleOff.toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
+              ],
+            ),
+
+            // Book info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Recommendation reason
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryDark.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          book.features.isNotEmpty
+                              ? book.features.first.featureName
+                              : 'Recommended',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Book title
+                    Text(
+                      book.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Author
+                    Text(
+                      'by ${book.author}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const Spacer(),
+
+                    // Rating and price
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          FormatPrice.formatPrice(
+                            book.price * (1 - book.saleOff / 100),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              4.5.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.text,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

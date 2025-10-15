@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:cookie_jar/cookie_jar.dart';
+import 'package:heaven_book_app/model/user.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
 class AuthService {
@@ -16,6 +17,127 @@ class AuthService {
 
   AuthService() {
     apiClient = ApiClient(_secureStorage, this);
+  }
+
+  Future<User> uploadAvatar(File imageFile) async {
+    try {
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
+
+      final response = await apiClient.privateDio.post(
+        '/upload/avatar',
+        data: formData,
+      );
+
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        debugPrint('Upload avatar thành công');
+        final userJson = response.data['data'];
+        return User.fromJson(userJson);
+      } else {
+        final message = response.data['message'] ?? 'Upload avatar thất bại';
+        final error = response.data['error'];
+        throw Exception(error != null ? '$message: $error' : message);
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        throw Exception(
+          e.response?.data['message'] ?? 'Không thể upload avatar',
+        );
+      }
+      throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
+    } catch (e, stack) {
+      debugPrint('Upload avatar error: $e');
+      debugPrint('Stacktrace: $stack');
+      rethrow;
+    }
+  }
+
+  Future<bool> updateInfoUser(
+    String name,
+    String dateOfBirth,
+    String phone,
+    String gender,
+  ) async {
+    try {
+      final response = await apiClient.privateDio.put(
+        '/auth/edit-profile',
+        data: {
+          "name": name,
+          "date_of_birth": dateOfBirth,
+          "phone": phone,
+          "gender": gender,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        debugPrint('Cập nhật thông tin người dùng thành công');
+        return true;
+      }
+
+      final message = response.data['message'] ?? 'Cập nhật thất bại';
+      final error = response.data['error'];
+      debugPrint('Update user info failed: $message');
+      throw Exception(error != null ? '$message: $error' : message);
+    } catch (e, stack) {
+      debugPrint('Update user info error: $e');
+      debugPrint('Stacktrace: $stack');
+      rethrow; // hoặc throw Exception('Chi tiết lỗi: $e');
+    }
+  }
+
+  Future<bool> changePassword(
+    String currentPassword,
+    String newPassword,
+    String newPasswordConfirmation,
+  ) async {
+    try {
+      final response = await apiClient.privateDio.put(
+        '/auth/change-password',
+        data: {
+          "current_password": currentPassword,
+          "new_password": newPassword,
+          "new_password_confirmation": newPasswordConfirmation,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('Đổi mật khẩu thành công');
+        return true;
+      } else {
+        throw Exception(response.data['message'] ?? 'Không thể đổi mật khẩu');
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        throw Exception(
+          e.response?.data['message'] ?? 'Không thể đổi mật khẩu',
+        );
+      }
+      throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
+    }
+  }
+
+  Future<User> getCurrentUser() async {
+    try {
+      final response = await apiClient.privateDio.get('/auth/me');
+
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        final userJson = response.data['data']['account'];
+        return User.fromJson(userJson);
+      } else {
+        throw Exception('Không thể lấy thông tin người dùng');
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        throw Exception(
+          e.response?.data['message'] ?? 'Không thể lấy thông tin người dùng',
+        );
+      }
+      throw Exception('Không thể kết nối đến server. Vui lòng thử lại.');
+    }
   }
 
   // ==================== LOGIN ====================
@@ -57,7 +179,7 @@ class AuthService {
         }
 
         // Lưu trạng thái user
-        final userData = data['user'] ?? data['account'] ?? {};
+        final userData = data['account'] ?? {};
         final isActiveValue = userData['is_active'] ?? 0;
         await _secureStorage.write(
           key: 'is_active',
@@ -93,7 +215,7 @@ class AuthService {
         throw Exception('Không tìm thấy refresh token trong SecureStorage');
       }
 
-      final response = await apiClient.publicDio.post(
+      final response = await apiClient.publicDio.get(
         '/auth/refresh',
         options: Options(headers: {'Cookie': 'refresh_token=$refreshToken'}),
       );
@@ -201,7 +323,7 @@ class AuthService {
       final response = await apiClient.publicDio.post(
         '/auth/register',
         data: {
-          "name": name,
+          "username": name,
           "email": email,
           "password": password,
           "password_confirmation": passwordConfirmation,
