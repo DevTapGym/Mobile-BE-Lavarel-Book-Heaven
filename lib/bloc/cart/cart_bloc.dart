@@ -42,9 +42,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     emit(CartLoading());
     try {
       final cart = await _cartService.getMyCart();
-      final relatedBooks = await _bookService.getBooksByCategory(
-        cart.items.isNotEmpty ? cart.items.first.categoryId : 1,
-      );
+      final relatedBooks = await _bookService.getAllBooks();
 
       // Lấy danh sách ID các sách trong giỏ
       final cartBookIds = cart.items.map((item) => item.bookId).toSet();

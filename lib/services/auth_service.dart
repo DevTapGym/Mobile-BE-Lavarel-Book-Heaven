@@ -74,18 +74,31 @@ class AuthService {
       );
 
       if (response.statusCode == 200 && response.data['data'] != null) {
-        debugPrint('Cập nhật thông tin người dùng thành công');
+        debugPrint('✅ Cập nhật thông tin người dùng thành công');
         return true;
+      } else {
+        final message = response.data['message'] ?? 'Cập nhật thất bại';
+        final error = response.data['error'];
+        debugPrint('⚠️ Update user info failed: $message');
+        throw Exception(error != null ? '$message: $error' : message);
+      }
+    } on DioException catch (dioError) {
+      debugPrint('❌ DioException khi cập nhật thông tin người dùng:');
+
+      if (dioError.response != null) {
+        debugPrint('Status code: ${dioError.response?.statusCode}');
+        debugPrint('Data: ${dioError.response?.data}');
+        debugPrint('Headers: ${dioError.response?.headers}');
+      } else {
+        debugPrint('Message: ${dioError.message}');
       }
 
-      final message = response.data['message'] ?? 'Cập nhật thất bại';
-      final error = response.data['error'];
-      debugPrint('Update user info failed: $message');
-      throw Exception(error != null ? '$message: $error' : message);
+      // Có thể throw lại lỗi nếu cần cho Bloc/UI xử lý
+      throw Exception('Lỗi cập nhật thông tin: ${dioError.message}');
     } catch (e, stack) {
-      debugPrint('Update user info error: $e');
-      debugPrint('Stacktrace: $stack');
-      rethrow; // hoặc throw Exception('Chi tiết lỗi: $e');
+      debugPrint('❌ Lỗi không xác định khi cập nhật thông tin: $e');
+      debugPrint('❌ Stacktrace: $stack');
+      throw Exception('Đã xảy ra lỗi không xác định: $e');
     }
   }
 
@@ -125,7 +138,7 @@ class AuthService {
       final response = await apiClient.privateDio.get('/auth/me');
 
       if (response.statusCode == 200 && response.data['data'] != null) {
-        final userJson = response.data['data']['account'];
+        final userJson = response.data['data'];
         return User.fromJson(userJson);
       } else {
         throw Exception('Không thể lấy thông tin người dùng');

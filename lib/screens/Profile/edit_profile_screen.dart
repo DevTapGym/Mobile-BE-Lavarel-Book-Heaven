@@ -97,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 icon: Icon(Icons.arrow_drop_down, color: Colors.black54),
                 items:
-                    ['Male', 'Female', 'Other'].map((String gender) {
+                    ['Nam', 'Nữ', 'Khác'].map((String gender) {
                       return DropdownMenuItem<String>(
                         value: gender,
                         child: Text(
@@ -480,6 +480,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
                     child: ElevatedButton(
                       onPressed: () {
+                        debugPrint(
+                          'Data to update: ${nameController.text}, '
+                          '$dateOfBirthForServer, '
+                          '${phoneController.text}, '
+                          '$selectedGender',
+                        );
                         // Cập nhật thông tin user
                         context.read<UserBloc>().add(
                           UpdateUser(

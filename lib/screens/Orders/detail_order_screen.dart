@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:heaven_book_app/bloc/order/order_bloc.dart';
+import 'package:heaven_book_app/bloc/order/order_event.dart';
+import 'package:heaven_book_app/bloc/order/order_state.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/widgets/appbar_custom_widget.dart';
 
-class DetailOrderScreen extends StatelessWidget {
+class DetailOrderScreen extends StatefulWidget {
   const DetailOrderScreen({super.key});
+
+  @override
+  State<DetailOrderScreen> createState() => _DetailOrderScreenState();
+}
+
+class _DetailOrderScreenState extends State<DetailOrderScreen> {
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+      if (args != null) {
+        final orderId = args['orderId'];
+        context.read<OrderBloc>().add(LoadDetailOrder(orderId: orderId));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,57 +56,76 @@ class DetailOrderScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Card(
-                  color: Colors.white,
-                  margin: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 20, 14, 4),
-                        child: _statusSection(),
-                      ),
-                      Container(
-                        height: 6,
-                        width: double.infinity,
-                        color: AppColors.background,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: _shippingAddressSection(),
-                      ),
-                      Container(
-                        height: 6,
-                        width: double.infinity,
-                        color: AppColors.background,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: _itemsSection(),
-                      ),
-                      Container(
-                        height: 6,
-                        width: double.infinity,
-                        color: AppColors.background,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: _orderSummarySection(),
-                      ),
-                      Container(
-                        height: 6,
-                        width: double.infinity,
-                        color: AppColors.background,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: _orderDetailsSection(),
-                      ),
-                    ],
-                  ),
+                BlocBuilder<OrderBloc, OrderState>(
+                  builder: (context, state) {
+                    if (state is OrderLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (state is OrderDetailLoaded) {
+                      return Card(
+                        color: Colors.white,
+                        margin: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(14, 20, 14, 4),
+                              child: _statusSection(),
+                            ),
+                            Container(
+                              height: 6,
+                              width: double.infinity,
+                              color: AppColors.background,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(14.0),
+                              child: _shippingAddressSection(),
+                            ),
+                            Container(
+                              height: 6,
+                              width: double.infinity,
+                              color: AppColors.background,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(14.0),
+                              child: _itemsSection(),
+                            ),
+                            Container(
+                              height: 6,
+                              width: double.infinity,
+                              color: AppColors.background,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(14.0),
+                              child: _orderSummarySection(),
+                            ),
+                            Container(
+                              height: 6,
+                              width: double.infinity,
+                              color: AppColors.background,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(14.0),
+                              child: _orderDetailsSection(),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (state is OrderError) {
+                      return Center(
+                        child: Text(
+                          'Error: ${state.message}',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      );
+                    } else {
+                      return const Center(
+                        child: Text('No order details available.'),
+                      );
+                    }
+                  },
                 ),
               ],
             ),

@@ -8,6 +8,30 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
   OrderBloc(this._orderService) : super(OrderInitial()) {
     on<LoadAllOrders>(_onLoadCategories);
+    on<LoadDetailOrder>(_onLoadDetailOrder);
+    on<PlaceOrder>(_onPlaceOrder);
+  }
+
+  Future<void> _onPlaceOrder(PlaceOrder event, Emitter<OrderState> emit) async {
+    emit(OrderLoading());
+    try {
+      final success = await _orderService.createOrder(
+        event.note ?? '',
+        event.paymentMethod,
+        event.cartId,
+        event.phone,
+        event.address,
+        event.name,
+      );
+      if (success) {
+        final orders = await _orderService.loadAllOrder();
+        emit(OrderLoaded(orders: orders, message: 'Order placed successfully'));
+      } else {
+        emit(OrderError('Failed to place order'));
+      }
+    } catch (e) {
+      emit(OrderError(e.toString()));
+    }
   }
 
   Future<void> _onLoadCategories(
@@ -18,6 +42,19 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     try {
       final orders = await _orderService.loadAllOrder();
       emit(OrderLoaded(orders: orders));
+    } catch (e) {
+      emit(OrderError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadDetailOrder(
+    LoadDetailOrder event,
+    Emitter<OrderState> emit,
+  ) async {
+    emit(OrderLoading());
+    try {
+      final order = await _orderService.loadDetailOrder(event.orderId);
+      emit(OrderDetailLoaded(order: order));
     } catch (e) {
       emit(OrderError(e.toString()));
     }

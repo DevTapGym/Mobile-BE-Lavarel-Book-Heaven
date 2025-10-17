@@ -5,6 +5,9 @@ import 'package:heaven_book_app/bloc/address/address_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_state.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/bloc/order/order_bloc.dart';
+import 'package:heaven_book_app/bloc/order/order_event.dart';
+import 'package:heaven_book_app/bloc/order/order_state.dart';
 import 'package:heaven_book_app/bloc/payment/payment_bloc.dart';
 import 'package:heaven_book_app/bloc/payment/payment_event.dart';
 import 'package:heaven_book_app/bloc/payment/payment_state.dart';
@@ -27,6 +30,7 @@ class CheckOutScreen extends StatefulWidget {
 class _CheckOutScreenState extends State<CheckOutScreen> {
   bool isChecked = false;
   int? selectedPaymentId;
+  final TextEditingController _noteController = TextEditingController();
 
   Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
     return Padding(
@@ -72,10 +76,63 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
           final address = state.addresses;
           if (address.isEmpty) {
             return Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                'No addresses found. Please add a shipping address in your profile.',
-                style: TextStyle(fontSize: 16, color: AppColors.black70),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 40.0,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.location_off_outlined,
+                    size: 80,
+                    color: Colors.grey.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'No shipping address found',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please add a shipping address in your profile to continue.',
+                    style: TextStyle(fontSize: 15, color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/shipping-address');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.add_location_alt_outlined,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Add Address',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           } else {
@@ -682,6 +739,85 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
     );
   }
 
+  Widget _buildNoteSection(TextEditingController noteController) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.0, top: 10.0, left: 18.0, right: 18.0),
+      padding: EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16.0),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.note_alt_outlined, color: AppColors.black60, size: 30),
+              SizedBox(width: 8.0),
+              Text(
+                'Order Note',
+                style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: noteController,
+              maxLines: 4,
+              maxLength: 200,
+              textInputAction: TextInputAction.done,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black87,
+                height: 1.5,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Enter your note or special request to the shop...',
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                counterStyle: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOrderSummarySection() {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, state) {
@@ -790,6 +926,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final addressState = context.read<AddressBloc>().state;
+
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, state) {
         if (state is CartLoading) {
@@ -886,9 +1024,65 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed:
+                          (addressState is AddressLoaded &&
+                                  addressState.addresses.isNotEmpty &&
+                                  selectedPaymentId != null)
+                              ? () {
+                                // Validate address
+                                final receiver = addressState.addresses
+                                    .firstWhere(
+                                      (addr) => addr.isDefault == 1,
+                                      orElse: () => addressState.addresses[0],
+                                    );
+
+                                // Validate payment method
+                                if (selectedPaymentId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Please select a payment method',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // Get payment method name
+                                final paymentState =
+                                    context.read<PaymentBloc>().state;
+                                String paymentMethodName = 'COD';
+                                if (paymentState is PaymentLoaded) {
+                                  final selectedPayment = paymentState.payments
+                                      .firstWhere(
+                                        (p) => p.id == selectedPaymentId,
+                                        orElse:
+                                            () => paymentState.payments.first,
+                                      );
+                                  paymentMethodName = selectedPayment.name;
+                                }
+
+                                // Place order
+                                context.read<OrderBloc>().add(
+                                  PlaceOrder(
+                                    note: _noteController.text.trim(),
+                                    paymentMethod: paymentMethodName,
+                                    cartId: state.cart.id,
+                                    phone: receiver.phoneNumber,
+                                    address: receiver.address,
+                                    name: receiver.recipientName,
+                                  ),
+                                );
+                              }
+                              : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryDark,
+                        backgroundColor:
+                            (addressState is AddressLoaded &&
+                                    addressState.addresses.isNotEmpty &&
+                                    selectedPaymentId != null)
+                                ? AppColors.primaryDark
+                                : Colors.grey,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -927,23 +1121,92 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
       create:
           (context) =>
               PaymentBloc(PaymentService(apiClient))..add(LoadPaymentMethods()),
-      child: Scaffold(
-        appBar: AppbarCustomWidget(title: 'Order Summary'),
-        body: Container(
-          color: AppColors.background,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildAddressSection(),
-                _buildProductsSection(),
-                //_buildDiscountSection(),
-                _buildPaymentSection(),
-                _buildOrderSummarySection(),
-              ],
+      child: BlocListener<OrderBloc, OrderState>(
+        listener: (context, state) {
+          if (state is OrderLoaded && state.message != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 24),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${state.message}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: EdgeInsets.all(16),
+                duration: Duration(seconds: 3),
+                elevation: 8,
+              ),
+            );
+            // Navigate back to home or orders screen after successful order
+            final navigator = Navigator.of(context);
+            Future.delayed(Duration(seconds: 2), () {
+              if (mounted) {
+                navigator.pushNamed('/main');
+              }
+            });
+          } else if (state is OrderError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 24),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Order failed: ${state.message}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: EdgeInsets.all(16),
+                duration: Duration(seconds: 3),
+                elevation: 8,
+              ),
+            );
+          }
+        },
+        child: Scaffold(
+          appBar: AppbarCustomWidget(title: 'Order Summary'),
+          body: Container(
+            color: AppColors.background,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildAddressSection(),
+                  _buildProductsSection(),
+                  //_buildDiscountSection(),
+                  _buildPaymentSection(),
+                  _buildNoteSection(_noteController),
+                  _buildOrderSummarySection(),
+                ],
+              ),
             ),
           ),
+          bottomNavigationBar: _buildBottomNavigationBar(),
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(),
       ),
     );
   }

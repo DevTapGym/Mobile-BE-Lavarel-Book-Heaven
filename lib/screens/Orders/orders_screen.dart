@@ -733,7 +733,9 @@ class _OrdersScreenState extends State<OrdersScreen>
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushNamed(context, '/main');
+                },
                 icon: const Icon(
                   Icons.shopping_bag,
                   color: Colors.white,
@@ -895,7 +897,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       Navigator.pushNamed(
                         context,
                         '/detail-order',
-                        arguments: order,
+                        arguments: {'orderId': order.id},
                       );
                     },
                     style: OutlinedButton.styleFrom(
