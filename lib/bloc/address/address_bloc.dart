@@ -60,6 +60,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         recipientName: event.recipientName,
         address: event.address,
         phoneNumber: event.phoneNumber,
+        tagId: event.tagId,
         isDefault: event.isDefault,
       );
       add(LoadAddresses());

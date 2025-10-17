@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_event.dart';
 import 'package:heaven_book_app/bloc/address/address_state.dart';
+import 'package:heaven_book_app/model/tag_address.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/widgets/address_card_widget.dart';
 import 'package:heaven_book_app/widgets/appbar_custom_widget.dart';
@@ -44,7 +45,6 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
   ];
 
   // Controllers for edit dialog
-  final TextEditingController _titleController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -56,15 +56,23 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
     String currentPhone,
     String currentAddress,
     bool isDefault,
+    int currentTagId,
   ) {
+    // Get tag list from state
+    final addressState = context.read<AddressBloc>().state;
+    List<TagAddress> tagList = [];
+    if (addressState is AddressLoaded) {
+      tagList = addressState.tagAddress;
+    }
+
     // Set initial values for controllers với dữ liệu thật
-    _titleController.text = currentTagName;
     _nameController.text = currentName;
     _phoneController.text = currentPhone;
     _addressController.text = currentAddress;
 
     // State for dialog
     bool tempIsDefault = isDefault;
+    int selectedTagId = currentTagId;
 
     showDialog(
       context: context,
@@ -117,11 +125,63 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          _buildEditTextField(
-                            controller: _titleController,
-                            label: 'Address Tag',
-                            icon: Icons.local_offer,
-                            hint: 'e.g., Home, Office, School',
+                          // Tag Dropdown
+                          StatefulBuilder(
+                            builder: (context, setState) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 4,
+                                ),
+                                child: DropdownButtonFormField<int>(
+                                  value: selectedTagId,
+                                  decoration: InputDecoration(
+                                    labelText: 'Address Tag',
+                                    prefixIcon: Icon(
+                                      Icons.local_offer,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                    labelStyle: TextStyle(
+                                      color: AppColors.primaryDark,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    border: InputBorder.none,
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                  ),
+                                  items:
+                                      tagList.map((tag) {
+                                        return DropdownMenuItem<int>(
+                                          value: tag.id,
+                                          child: Text(
+                                            tag.name,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        selectedTagId = value;
+                                      });
+                                    }
+                                  },
+                                  dropdownColor: Colors.white,
+                                  icon: Icon(
+                                    Icons.arrow_drop_down,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
 
                           SizedBox(height: 16),
@@ -241,8 +301,11 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed:
-                              () =>
-                                  _saveEditedAddress(addressId, tempIsDefault),
+                              () => _saveEditedAddress(
+                                addressId,
+                                tempIsDefault,
+                                selectedTagId,
+                              ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryDark,
                             padding: EdgeInsets.symmetric(vertical: 16),
@@ -306,12 +369,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
     );
   }
 
-  void _saveEditedAddress(int addressId, bool isDefault) {
+  void _saveEditedAddress(int addressId, bool isDefault, int tagId) {
     // Validation
-    if (_titleController.text.trim().isEmpty) {
-      _showErrorSnackBar('Please enter address tag');
-      return;
-    }
     if (_nameController.text.trim().isEmpty) {
       _showErrorSnackBar('Please enter recipient name');
       return;
@@ -332,6 +391,7 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
         recipientName: _nameController.text.trim(),
         address: _addressController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
+        tagId: tagId,
         isDefault: isDefault,
       ),
     );
@@ -450,6 +510,7 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                                   addresses[index].phoneNumber,
                                   addresses[index].address,
                                   addresses[index].isDefault == 1,
+                                  addresses[index].tagId,
                                 ),
                             onDelete:
                                 () => _showDeleteDialog(addresses[index].id),
@@ -509,7 +570,6 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();

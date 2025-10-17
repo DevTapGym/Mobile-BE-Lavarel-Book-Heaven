@@ -190,17 +190,7 @@ class _CartScreenState extends State<CartScreen> {
                       selectedItems.isNotEmpty
                           ? () {
                             Navigator.of(context).pop();
-                            Navigator.pushNamed(
-                              context,
-                              '/check-out',
-                              arguments: {
-                                'selectedItems': selectedItems,
-                                'subtotal': subtotal,
-                                'shipping': shipping,
-                                'totalSavings': totalSavings,
-                                'finalAmount': finalAmount,
-                              },
-                            );
+                            Navigator.pushNamed(context, '/check-out');
                           }
                           : null,
                   style: ElevatedButton.styleFrom(

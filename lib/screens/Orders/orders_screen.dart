@@ -29,7 +29,7 @@ class _OrdersScreenState extends State<OrdersScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _filteredOrders = [];
 
     // Load orders when screen initializes
@@ -53,18 +53,20 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   List<Order> _getOrdersForTab(String tab) {
     switch (tab) {
-      case 'Pending':
-        return getOrdersByStatus('Pending');
+      case 'WaitConfirm':
+        return getOrdersByStatus('wait_confirm');
       case 'Processing':
-        return getOrdersByStatus('Processing');
+        return getOrdersByStatus('processing');
       case 'Shipping':
-        return getOrdersByStatus('Shipped');
-      case 'Delivered':
-        return getOrdersByStatus('Delivered');
+        return getOrdersByStatus('shipping');
+      case 'PaymentCompleted':
+        return getOrdersByStatus('payment_completed');
       case 'Canceled':
-        return getOrdersByStatus('Cancelled');
+        return getOrdersByStatus('cancelled');
       case 'Returned':
-        return getOrdersByStatus('Returned');
+        return getOrdersByStatus('returned');
+      case 'Completed':
+        return getOrdersByStatus('completed');
       default:
         return _filteredOrders;
     }
@@ -631,7 +633,10 @@ class _OrdersScreenState extends State<OrdersScreen>
                         child: Text('All', style: TextStyle(fontSize: 16)),
                       ),
                       const Tab(
-                        child: Text('Pending', style: TextStyle(fontSize: 16)),
+                        child: Text(
+                          'Wait confirm',
+                          style: TextStyle(fontSize: 16),
+                        ),
                       ),
                       const Tab(
                         child: Text(
@@ -644,7 +649,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                       const Tab(
                         child: Text(
-                          'Delivered',
+                          'Payment Completed',
                           style: TextStyle(fontSize: 16),
                         ),
                       ),
@@ -653,6 +658,12 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                       const Tab(
                         child: Text('Returned', style: TextStyle(fontSize: 16)),
+                      ),
+                      const Tab(
+                        child: Text(
+                          'Completed',
+                          style: TextStyle(fontSize: 16),
+                        ),
                       ),
                     ],
                   ),
@@ -667,12 +678,13 @@ class _OrdersScreenState extends State<OrdersScreen>
                     controller: _tabController,
                     children: [
                       _buildOrderList(_getOrdersForTab('All')),
-                      _buildOrderList(_getOrdersForTab('Pending')),
+                      _buildOrderList(_getOrdersForTab('WaitConfirm')),
                       _buildOrderList(_getOrdersForTab('Processing')),
                       _buildOrderList(_getOrdersForTab('Shipping')),
-                      _buildOrderList(_getOrdersForTab('Delivered')),
+                      _buildOrderList(_getOrdersForTab('PaymentCompleted')),
                       _buildOrderList(_getOrdersForTab('Canceled')),
                       _buildOrderList(_getOrdersForTab('Returned')),
+                      _buildOrderList(_getOrdersForTab('Completed')),
                     ],
                   ),
                 ),
@@ -920,7 +932,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                if (order.statusHistory.last.name == 'Delivered')
+                if (order.statusHistory.last.name == 'completed' ||
+                    order.statusHistory.last.name == 'returned')
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {},
@@ -936,7 +949,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                     ),
                   ),
-                if (order.statusHistory.last.name == 'Processing')
+                if (order.statusHistory.last.name == 'wait_confirm' ||
+                    order.statusHistory.last.name == 'processing')
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {},
@@ -1011,23 +1025,28 @@ class _OrdersScreenState extends State<OrdersScreen>
     Color textColor;
 
     switch (status) {
-      case 'Pending':
-      case 'Processing':
-      case 'Shipped':
-        backgroundColor = Colors.blue.shade100;
-        textColor = Colors.blue.shade700;
+      case 'wait_confirm':
+      case 'processing':
+      case 'shipping':
+        backgroundColor = AppColors.primaryDark;
+        textColor = Colors.white;
         break;
-      case 'Delivered':
-        backgroundColor = Colors.green.shade100;
-        textColor = Colors.green.shade700;
+      case 'completed':
+      case 'payment_completed':
+        backgroundColor = Colors.green;
+        textColor = Colors.white;
         break;
-      case 'Cancelled':
-        backgroundColor = Colors.red.shade100;
-        textColor = Colors.red.shade700;
+      case 'cancelled':
+        backgroundColor = Colors.red;
+        textColor = Colors.white;
+        break;
+      case 'returned':
+        backgroundColor = Colors.orange;
+        textColor = Colors.white;
         break;
       default:
-        backgroundColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade700;
+        backgroundColor = Colors.grey;
+        textColor = Colors.white;
     }
 
     return Container(

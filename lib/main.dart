@@ -8,6 +8,7 @@ import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
 import 'package:heaven_book_app/bloc/order/order_bloc.dart';
 import 'package:heaven_book_app/bloc/user/user_bloc.dart';
@@ -156,6 +157,12 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<CartBloc>().add(LoadCart());
   }
 
   @override

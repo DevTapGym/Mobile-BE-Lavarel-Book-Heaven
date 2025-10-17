@@ -7,6 +7,27 @@ abstract class OrderEvent extends Equatable {
 
 class LoadAllOrders extends OrderEvent {}
 
+class CreateOrder extends OrderEvent {
+  final String note;
+  final String paymentMethod;
+  final String phone;
+  final String address;
+  final String name;
+  final List<Map<String, dynamic>> items;
+
+  CreateOrder({
+    required this.note,
+    required this.paymentMethod,
+    required this.phone,
+    required this.address,
+    required this.name,
+    required this.items,
+  });
+
+  @override
+  List<Object?> get props => [note, paymentMethod, phone, address, name, items];
+}
+
 class PlaceOrder extends OrderEvent {
   final String? note;
   final String paymentMethod;

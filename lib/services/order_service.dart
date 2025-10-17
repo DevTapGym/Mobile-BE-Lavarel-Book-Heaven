@@ -7,7 +7,49 @@ class OrderService {
   final ApiClient apiClient;
   OrderService(this.apiClient);
 
-  Future<bool> createOrder(
+  Future<bool> createOrder({
+    required String note,
+    required String paymentMethod,
+    required String phone,
+    required String address,
+    required String name,
+    required List<Map<String, dynamic>> items, // thêm items
+  }) async {
+    try {
+      final response = await apiClient.privateDio.post(
+        '/order/place',
+        data: {
+          'note': note,
+          'payment_method': paymentMethod,
+          'phone': phone,
+          'address': address,
+          'name': name,
+          'items': items, // truyền list items
+        },
+      );
+
+      if (response.statusCode == 201) {
+        debugPrint('✅ Order created successfully');
+        return true;
+      } else {
+        throw Exception('Failed to create order: ${response.data['message']}');
+      }
+    } on DioException catch (dioError) {
+      debugPrint('❌ DioException khi tạo đơn hàng: ${dioError.message}');
+
+      if (dioError.response != null) {
+        debugPrint('Status code: ${dioError.response?.statusCode}');
+        debugPrint('Data: ${dioError.response?.data}');
+        debugPrint('Headers: ${dioError.response?.headers}');
+      }
+      throw Exception('Lỗi khi tạo đơn hàng: ${dioError.message}');
+    } catch (e) {
+      debugPrint('Error creating order: $e');
+      throw Exception('Error creating order: $e');
+    }
+  }
+
+  Future<bool> placeOrder(
     String note,
     String paymentMethod,
     int cartId,

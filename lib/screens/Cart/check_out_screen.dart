@@ -1036,19 +1036,6 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                                       orElse: () => addressState.addresses[0],
                                     );
 
-                                // Validate payment method
-                                if (selectedPaymentId == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Please select a payment method',
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                  return;
-                                }
-
                                 // Get payment method name
                                 final paymentState =
                                     context.read<PaymentBloc>().state;
@@ -1062,8 +1049,6 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                                       );
                                   paymentMethodName = selectedPayment.name;
                                 }
-
-                                // Place order
                                 context.read<OrderBloc>().add(
                                   PlaceOrder(
                                     note: _noteController.text.trim(),
@@ -1147,13 +1132,13 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 margin: EdgeInsets.all(16),
-                duration: Duration(seconds: 3),
+                duration: Duration(seconds: 2),
                 elevation: 8,
               ),
             );
             // Navigate back to home or orders screen after successful order
             final navigator = Navigator.of(context);
-            Future.delayed(Duration(seconds: 2), () {
+            Future.delayed(Duration(seconds: 3), () {
               if (mounted) {
                 navigator.pushNamed('/main');
               }

@@ -124,6 +124,7 @@ class AddressService {
     required String recipientName,
     required String address,
     required String phoneNumber,
+    required int tagId,
     required bool isDefault,
   }) async {
     try {
@@ -134,6 +135,7 @@ class AddressService {
           'recipient_name': recipientName,
           'address': address,
           'phone_number': phoneNumber,
+          'tag_id': tagId,
           'is_default': isDefault,
         },
       );

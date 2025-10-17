@@ -10,12 +10,40 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<LoadAllOrders>(_onLoadCategories);
     on<LoadDetailOrder>(_onLoadDetailOrder);
     on<PlaceOrder>(_onPlaceOrder);
+    on<CreateOrder>(_onCreateOrder);
+  }
+
+  Future<void> _onCreateOrder(
+    CreateOrder event,
+    Emitter<OrderState> emit,
+  ) async {
+    emit(OrderLoading());
+    try {
+      final success = await _orderService.createOrder(
+        note: event.note,
+        paymentMethod: event.paymentMethod,
+        phone: event.phone,
+        address: event.address,
+        name: event.name,
+        items: event.items,
+      );
+      if (success) {
+        final orders = await _orderService.loadAllOrder();
+        emit(
+          OrderLoaded(orders: orders, message: 'Order created successfully'),
+        );
+      } else {
+        emit(OrderError('Failed to create order'));
+      }
+    } catch (e) {
+      emit(OrderError(e.toString()));
+    }
   }
 
   Future<void> _onPlaceOrder(PlaceOrder event, Emitter<OrderState> emit) async {
     emit(OrderLoading());
     try {
-      final success = await _orderService.createOrder(
+      final success = await _orderService.placeOrder(
         event.note ?? '',
         event.paymentMethod,
         event.cartId,
