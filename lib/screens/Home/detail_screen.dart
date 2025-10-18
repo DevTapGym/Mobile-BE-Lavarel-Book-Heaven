@@ -4,6 +4,7 @@ import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/book/book_state.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
 import 'package:heaven_book_app/bloc/cart/cart_event.dart';
+import 'package:heaven_book_app/model/checkout.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/book_section_widget.dart';
 
@@ -598,9 +599,7 @@ class _DetailScreenState extends State<DetailScreen>
                   children: [
                     if (book.saleOff > 0) ...[
                       Text(
-                        FormatPrice.formatPrice(
-                          book.price * (1 - book.saleOff / 100),
-                        ),
+                        FormatPrice.formatPrice(book.price),
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -609,7 +608,9 @@ class _DetailScreenState extends State<DetailScreen>
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        FormatPrice.formatPrice(book.price),
+                        FormatPrice.formatPrice(
+                          book.price * (1 + book.saleOff / 100),
+                        ),
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.grey[500],
@@ -1034,8 +1035,19 @@ class _DetailScreenState extends State<DetailScreen>
                     final book = state.book;
                     Navigator.pushNamed(
                       context,
-                      '/checkout',
-                      arguments: {'bookId': book.id, 'quantity': quantity},
+                      '/buy-now',
+                      arguments: {
+                        'items': [
+                          Checkout(
+                            bookId: book.id,
+                            bookTitle: book.title,
+                            bookThumbnail: book.thumbnail,
+                            unitPrice: book.price,
+                            quantity: quantity,
+                            saleOff: book.saleOff,
+                          ),
+                        ],
+                      },
                     );
                   }
                 },

@@ -11,7 +11,9 @@ import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
 import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
 import 'package:heaven_book_app/bloc/order/order_bloc.dart';
+import 'package:heaven_book_app/bloc/payment/payment_bloc.dart';
 import 'package:heaven_book_app/bloc/user/user_bloc.dart';
+import 'package:heaven_book_app/screens/Orders/buy_now_screen.dart';
 import 'package:heaven_book_app/services/book_service.dart';
 import 'package:heaven_book_app/services/cart_service.dart';
 import 'package:heaven_book_app/screens/Auth/active_screen.dart';
@@ -39,6 +41,7 @@ import 'package:heaven_book_app/services/address_service.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/services/order_service.dart';
+import 'package:heaven_book_app/services/payment_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
@@ -52,6 +55,7 @@ void main() {
   final bookRepository = BookService(apiClient);
   final addressService = AddressService(apiClient);
   final orderService = OrderService(apiClient);
+  final paymentService = PaymentService(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -68,6 +72,7 @@ void main() {
           create: (_) => AddressBloc(addressService)..add(LoadAddresses()),
         ),
         BlocProvider<OrderBloc>(create: (_) => OrderBloc(orderService)),
+        BlocProvider<PaymentBloc>(create: (_) => PaymentBloc(paymentService)),
       ],
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -112,6 +117,7 @@ class MyApp extends StatelessWidget {
 
         '/cart': (context) => const CartScreen(),
         '/check-out': (context) => const CheckOutScreen(),
+        '/buy-now': (context) => const BuyNowScreen(),
 
         '/profile': (context) => const ProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),

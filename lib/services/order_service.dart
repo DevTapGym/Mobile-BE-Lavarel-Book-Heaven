@@ -7,6 +7,40 @@ class OrderService {
   final ApiClient apiClient;
   OrderService(this.apiClient);
 
+  Future<bool> updateOrderStatus({
+    required int orderId,
+    required int statusId,
+    required String note,
+  }) async {
+    try {
+      final response = await apiClient.privateDio.put(
+        '/order',
+        data: {'id': orderId, 'statusId': statusId, 'note': note},
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Order status updated successfully');
+        return true;
+      } else {
+        throw Exception(
+          'Failed to update order status: ${response.data['message']}',
+        );
+      }
+    } on DioException catch (dioError) {
+      debugPrint('❌ DioException khi cập nhật trạng thái: ${dioError.message}');
+
+      if (dioError.response != null) {
+        debugPrint('Status code: ${dioError.response?.statusCode}');
+        debugPrint('Data: ${dioError.response?.data}');
+        debugPrint('Headers: ${dioError.response?.headers}');
+      }
+      throw Exception('Lỗi khi tạo đơn hàng: ${dioError.message}');
+    } catch (e) {
+      debugPrint('Error updating order status: $e');
+      throw Exception('Error updating order status: $e');
+    }
+  }
+
   Future<bool> createOrder({
     required String note,
     required String paymentMethod,
@@ -17,7 +51,7 @@ class OrderService {
   }) async {
     try {
       final response = await apiClient.privateDio.post(
-        '/order/place',
+        '/order/create',
         data: {
           'note': note,
           'payment_method': paymentMethod,

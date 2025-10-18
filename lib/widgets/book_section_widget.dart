@@ -200,7 +200,9 @@ class BookCard extends StatelessWidget {
                               if (saleOff > 0) ...[
                                 // Hiển thị giá gốc bị gạch ngang
                                 Text(
-                                  FormatPrice.formatPrice(price),
+                                  FormatPrice.formatPrice(
+                                    price * (1 + (saleOff / 100)),
+                                  ),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
@@ -212,9 +214,7 @@ class BookCard extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      FormatPrice.formatPrice(
-                                        price * (1 - saleOff / 100),
-                                      ),
+                                      FormatPrice.formatPrice(price),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,

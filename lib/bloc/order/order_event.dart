@@ -7,6 +7,21 @@ abstract class OrderEvent extends Equatable {
 
 class LoadAllOrders extends OrderEvent {}
 
+class UpdateOrderStatus extends OrderEvent {
+  final int orderId;
+  final int statusId;
+  final String note;
+
+  UpdateOrderStatus({
+    required this.orderId,
+    required this.statusId,
+    required this.note,
+  });
+
+  @override
+  List<Object?> get props => [orderId, statusId, note];
+}
+
 class CreateOrder extends OrderEvent {
   final String note;
   final String paymentMethod;

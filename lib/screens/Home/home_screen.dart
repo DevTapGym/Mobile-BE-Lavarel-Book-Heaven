@@ -1028,9 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          FormatPrice.formatPrice(
-                            book.price * (1 - book.saleOff / 100),
-                          ),
+                          FormatPrice.formatPrice(book.price),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -1392,7 +1390,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '5.0 (${book.sold} sold)', // Sử dụng book.sold thay vì reviewCount
+                              '5.0 (${book.sold} sold)',
                               style: const TextStyle(fontSize: 12),
                             ),
                             const SizedBox(width: 20),
@@ -1437,7 +1435,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // Hiển thị giá với logic sale off
                                 if (book.saleOff > 0) ...[
                                   Text(
-                                    FormatPrice.formatPrice(book.price),
+                                    FormatPrice.formatPrice(
+                                      book.price * (1 + (book.saleOff / 100)),
+                                    ),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey[600],
@@ -1445,9 +1445,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   Text(
-                                    FormatPrice.formatPrice(
-                                      book.price * (1 - book.saleOff / 100),
-                                    ),
+                                    FormatPrice.formatPrice(book.price),
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,

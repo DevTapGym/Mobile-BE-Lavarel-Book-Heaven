@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/order/order_bloc.dart';
 import 'package:heaven_book_app/bloc/order/order_event.dart';
 import 'package:heaven_book_app/bloc/order/order_state.dart';
+import 'package:heaven_book_app/model/checkout.dart';
 import 'package:heaven_book_app/model/order.dart';
 import 'package:heaven_book_app/model/order_item.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
@@ -62,7 +63,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       case 'PaymentCompleted':
         return getOrdersByStatus('payment_completed');
       case 'Canceled':
-        return getOrdersByStatus('cancelled');
+        return getOrdersByStatus('canceled');
       case 'Returned':
         return getOrdersByStatus('returned');
       case 'Completed':
@@ -426,23 +427,33 @@ class _OrdersScreenState extends State<OrdersScreen>
   }
 
   void _filterOrdersByDateRange() {
-    if (_selectedDateRange == null) {
-      debugPrint('❌ No date range selected');
-      return;
-    }
-
-    debugPrint('🔍 Filtering orders by date range:');
-    debugPrint(
-      '  📅 Start: ${_selectedDateRange!.start.toString().split(' ')[0]}',
+    final startDate = DateTime(
+      _selectedDateRange!.start.year,
+      _selectedDateRange!.start.month,
+      _selectedDateRange!.start.day,
     );
-    debugPrint('  📅 End: ${_selectedDateRange!.end.toString().split(' ')[0]}');
+    final endDate = DateTime(
+      _selectedDateRange!.end.year,
+      _selectedDateRange!.end.month,
+      _selectedDateRange!.end.day,
+      23,
+      59,
+      59,
+      999,
+    );
 
-    // Trigger rebuild to apply the filter
-    // The actual filtering logic is handled in _applyDateFilter method
-    // which is called from BlocBuilder when state changes
     setState(() {
-      // This will cause the UI to rebuild and _applyDateFilter will be called
-      debugPrint('🔄 Triggering UI rebuild with date filter...');
+      _filteredOrders =
+          _filteredOrders.where((order) {
+            final orderDate = DateTime(
+              order.orderDate.year,
+              order.orderDate.month,
+              order.orderDate.day,
+            );
+            return (orderDate.isAtSameMomentAs(startDate) ||
+                orderDate.isAtSameMomentAs(endDate) ||
+                (orderDate.isAfter(startDate) && orderDate.isBefore(endDate)));
+          }).toList();
     });
 
     debugPrint('✅ Date filter applied successfully');
@@ -516,6 +527,354 @@ class _OrdersScreenState extends State<OrdersScreen>
       _selectedDateRange = null;
     });
     debugPrint('✅ Date filter cleared - showing all orders');
+  }
+
+  void _showCancelOrderBottomSheet(Order order) {
+    String? selectedReason;
+    String customReason = '';
+    final TextEditingController reasonController = TextEditingController();
+
+    final List<String> cancelReasons = [
+      'Không còn nhu cầu mua',
+      'Phí ship cao hoặc tổng tiền vượt dự tính',
+      'Tìm thấy sản phẩm giá tốt hơn',
+      'Đặt nhầm sản phẩm',
+      'Khác (nhập lý do)',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with close button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Lý do hủy đơn hàng',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.close, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Đơn hàng: ${order.orderNumber}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Cancel reasons list
+                      ...cancelReasons.map((reason) {
+                        final isSelected = selectedReason == reason;
+                        final isCustomReason = reason.startsWith('Khác');
+
+                        return Column(
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                setModalState(() {
+                                  selectedReason = reason;
+                                  if (!isCustomReason) {
+                                    reasonController.clear();
+                                    customReason = '';
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isSelected
+                                          ? AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          )
+                                          : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? AppColors.primary
+                                            : Colors.grey[300]!,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isSelected
+                                          ? Icons.radio_button_checked
+                                          : Icons.radio_button_unchecked,
+                                      color:
+                                          isSelected
+                                              ? AppColors.primary
+                                              : Colors.grey[400],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        reason,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color:
+                                              isSelected
+                                                  ? AppColors.primary
+                                                  : Colors.black87,
+                                          fontWeight:
+                                              isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Custom reason input
+                            if (isSelected && isCustomReason)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: TextField(
+                                  controller: reasonController,
+                                  onChanged: (value) {
+                                    customReason = value;
+                                  },
+                                  maxLines: 3,
+                                  decoration: InputDecoration(
+                                    hintText: 'Nhập lý do hủy của bạn...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[400],
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: AppColors.primary,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.all(16),
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                          ],
+                        );
+                      }),
+
+                      const SizedBox(height: 20),
+
+                      // Cancel order button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed:
+                              selectedReason != null &&
+                                      (selectedReason!.startsWith('Khác')
+                                          ? customReason.trim().isNotEmpty
+                                          : true)
+                                  ? () {
+                                    Navigator.pop(context);
+                                    _showConfirmCancelDialog(
+                                      order,
+                                      selectedReason!.startsWith('Khác')
+                                          ? customReason
+                                          : selectedReason!,
+                                    );
+                                  }
+                                  : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            disabledBackgroundColor: Colors.grey[300],
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Hủy đơn hàng',
+                            style: TextStyle(
+                              color:
+                                  selectedReason != null &&
+                                          (selectedReason!.startsWith('Khác')
+                                              ? customReason.trim().isNotEmpty
+                                              : true)
+                                      ? Colors.white
+                                      : Colors.grey[600],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showConfirmCancelDialog(Order order, String reason) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                'Xác nhận hủy đơn',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bạn có chắc chắn muốn hủy đơn hàng?',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Đơn hàng: ${order.orderNumber}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Lý do: $reason',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Hành động này không thể hoàn tác!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.red,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Không',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Gọi sự kiện UpdateOrderStatus với statusId = 5
+                context.read<OrderBloc>().add(
+                  UpdateOrderStatus(
+                    orderId: order.id,
+                    statusId: 5,
+                    note: reason,
+                  ),
+                );
+                // Hiển thị thông báo
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đang hủy đơn hàng...'),
+                    backgroundColor: AppColors.primary,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: Text(
+                'Đồng ý hủy',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildDateFilterChip() {
@@ -593,105 +952,140 @@ class _OrdersScreenState extends State<OrdersScreen>
           const SizedBox(width: 8),
         ],
       ),
-      body: BlocBuilder<OrderBloc, OrderState>(
-        builder: (context, state) {
-          if (state is OrderLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
+      body: BlocListener<OrderBloc, OrderState>(
+        listener: (context, state) {
           if (state is OrderError) {
-            return Center(
-              child: Text(
-                'Error loading orders: ${state.message}',
-                style: const TextStyle(color: Colors.red),
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
               ),
             );
+          } else if (state is OrderLoaded && state.message != null) {
+            // Hiển thị thông báo thành công khi có message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message!),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+            // Reload lại danh sách đơn hàng
+            Future.delayed(Duration(milliseconds: 500), () {
+              context.read<OrderBloc>().add(LoadAllOrders());
+            });
           }
-
-          if (state is OrderLoaded) {
-            _filteredOrders =
-                _selectedDateRange != null
-                    ? _applyDateFilter(state.orders)
-                    : state.orders;
-          }
-
-          return Container(
-            color: AppColors.background,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Material(
-                  color: AppColors.primary,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: AppColors.background,
-                    labelColor: AppColors.background,
-                    unselectedLabelColor: Colors.white60,
-                    isScrollable: true,
-                    tabs: [
-                      const Tab(
-                        child: Text('All', style: TextStyle(fontSize: 16)),
-                      ),
-                      const Tab(
-                        child: Text(
-                          'Wait confirm',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      const Tab(
-                        child: Text(
-                          'Processing',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      const Tab(
-                        child: Text('Shipping', style: TextStyle(fontSize: 16)),
-                      ),
-                      const Tab(
-                        child: Text(
-                          'Payment Completed',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      const Tab(
-                        child: Text('Canceled', style: TextStyle(fontSize: 16)),
-                      ),
-                      const Tab(
-                        child: Text('Returned', style: TextStyle(fontSize: 16)),
-                      ),
-                      const Tab(
-                        child: Text(
-                          'Completed',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Date filter chip
-                _buildDateFilterChip(),
-
-                // Tab bar view
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildOrderList(_getOrdersForTab('All')),
-                      _buildOrderList(_getOrdersForTab('WaitConfirm')),
-                      _buildOrderList(_getOrdersForTab('Processing')),
-                      _buildOrderList(_getOrdersForTab('Shipping')),
-                      _buildOrderList(_getOrdersForTab('PaymentCompleted')),
-                      _buildOrderList(_getOrdersForTab('Canceled')),
-                      _buildOrderList(_getOrdersForTab('Returned')),
-                      _buildOrderList(_getOrdersForTab('Completed')),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
         },
+        child: BlocBuilder<OrderBloc, OrderState>(
+          builder: (context, state) {
+            if (state is OrderLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (state is OrderError) {
+              return Center(
+                child: Text(
+                  'Error loading orders: ${state.message}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
+            }
+
+            if (state is OrderLoaded) {
+              _filteredOrders =
+                  _selectedDateRange != null
+                      ? _applyDateFilter(state.orders)
+                      : state.orders;
+            }
+
+            return Container(
+              color: AppColors.background,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Material(
+                    color: AppColors.primary,
+                    child: TabBar(
+                      controller: _tabController,
+                      indicatorColor: AppColors.background,
+                      labelColor: AppColors.background,
+                      unselectedLabelColor: Colors.white60,
+                      isScrollable: true,
+                      tabs: [
+                        const Tab(
+                          child: Text('All', style: TextStyle(fontSize: 16)),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Wait confirm',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Processing',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Shipping',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Payment Completed',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Canceled',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Returned',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            'Completed',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Date filter chip
+                  _buildDateFilterChip(),
+
+                  // Tab bar view
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildOrderList(_getOrdersForTab('All')),
+                        _buildOrderList(_getOrdersForTab('WaitConfirm')),
+                        _buildOrderList(_getOrdersForTab('Processing')),
+                        _buildOrderList(_getOrdersForTab('Shipping')),
+                        _buildOrderList(_getOrdersForTab('PaymentCompleted')),
+                        _buildOrderList(_getOrdersForTab('Canceled')),
+                        _buildOrderList(_getOrdersForTab('Returned')),
+                        _buildOrderList(_getOrdersForTab('Completed')),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -936,7 +1330,28 @@ class _OrdersScreenState extends State<OrdersScreen>
                     order.statusHistory.last.name == 'returned')
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        final state = context.read<OrderBloc>().state;
+                        if (state is OrderLoaded) {
+                          Navigator.pushNamed(
+                            context,
+                            '/buy-now',
+                            arguments: {
+                              'items': [
+                                for (var item in order.items)
+                                  Checkout(
+                                    bookId: item.bookId,
+                                    quantity: item.quantity,
+                                    bookTitle: item.bookTitle,
+                                    unitPrice: item.unitPrice,
+                                    saleOff: item.bookSaleOff,
+                                    bookThumbnail: item.bookThumbnail,
+                                  ),
+                              ],
+                            },
+                          );
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
@@ -953,7 +1368,9 @@ class _OrdersScreenState extends State<OrdersScreen>
                     order.statusHistory.last.name == 'processing')
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _showCancelOrderBottomSheet(order);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
@@ -962,6 +1379,22 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                       child: const Text(
                         'Cancel Order',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                if (order.statusHistory.last.name == 'payment_completed')
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Return Order',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -1036,7 +1469,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         backgroundColor = Colors.green;
         textColor = Colors.white;
         break;
-      case 'cancelled':
+      case 'canceled':
         backgroundColor = Colors.red;
         textColor = Colors.white;
         break;
@@ -1056,7 +1489,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        status,
+        status == "payment_completed" ? "paid" : status.replaceAll('_', ' '),
         style: TextStyle(
           color: textColor,
           fontSize: 12,

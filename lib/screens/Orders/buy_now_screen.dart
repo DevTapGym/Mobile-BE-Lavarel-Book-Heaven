@@ -2,36 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_state.dart';
-import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
-import 'package:heaven_book_app/bloc/cart/cart_state.dart';
+import 'package:heaven_book_app/bloc/book/book_bloc.dart';
+import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/order/order_bloc.dart';
 import 'package:heaven_book_app/bloc/order/order_event.dart';
 import 'package:heaven_book_app/bloc/order/order_state.dart';
 import 'package:heaven_book_app/bloc/payment/payment_bloc.dart';
 import 'package:heaven_book_app/bloc/payment/payment_event.dart';
 import 'package:heaven_book_app/bloc/payment/payment_state.dart';
+import 'package:heaven_book_app/model/checkout.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/address_card_widget.dart';
 import 'package:heaven_book_app/widgets/appbar_custom_widget.dart';
 import 'package:heaven_book_app/widgets/custom_circle_checkbox.dart';
 
-class CheckOutScreen extends StatefulWidget {
-  const CheckOutScreen({super.key});
+class BuyNowScreen extends StatefulWidget {
+  const BuyNowScreen({super.key});
 
   @override
-  State<CheckOutScreen> createState() => _CheckOutScreenState();
+  State<BuyNowScreen> createState() => _BuyNowScreenState();
 }
 
-class _CheckOutScreenState extends State<CheckOutScreen> {
+class _BuyNowScreenState extends State<BuyNowScreen> {
   bool isChecked = false;
   int? selectedPaymentId;
   final TextEditingController _noteController = TextEditingController();
 
+  // Checkout items từ arguments
+  List<Checkout> checkoutItems = [];
+  bool _isInitialized = false;
   @override
   void initState() {
     super.initState();
     context.read<PaymentBloc>().add(LoadPaymentMethods());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args['items'] != null) {
+        checkoutItems = args['items'] as List<Checkout>;
+      }
+    }
   }
 
   Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
@@ -252,15 +269,17 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
-                        originalPrice,
-                        style: TextStyle(
-                          decoration: TextDecoration.lineThrough,
-                          decorationColor: Colors.grey,
-                          color: Colors.grey,
-                          fontSize: 15,
+                      if (discount > 0) ...[
+                        Text(
+                          originalPrice,
+                          style: TextStyle(
+                            decoration: TextDecoration.lineThrough,
+                            decorationColor: Colors.grey,
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
                         ),
-                      ),
+                      ],
                       SizedBox(width: 8),
                       if (discount > 0) ...[
                         Container(
@@ -373,64 +392,49 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Widget _buildProductsSection() {
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, state) {
-        if (state is CartLoading) {
-          return Center(child: CircularProgressIndicator());
-        } else if (state is CartLoaded) {
-          final cartItems =
-              state.cart.items.where((item) => item.isSelected).toList();
-          if (cartItems.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                'No products selected for checkout. Please select items in your cart.',
-                style: TextStyle(fontSize: 16, color: AppColors.black70),
+    if (checkoutItems.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Text(
+          'No products for checkout.',
+          style: TextStyle(fontSize: 16, color: AppColors.black70),
+        ),
+      );
+    }
+
+    return Container(
+      margin: EdgeInsets.only(top: 10.0, left: 18.0, right: 18.0),
+      padding: EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16.0),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...checkoutItems.map(
+            (item) => _buildProductItem(
+              title: item.bookTitle,
+              price: FormatPrice.formatPrice(
+                item.unitPrice - (item.unitPrice * item.saleOff / 100),
               ),
-            );
-          } else {
-            return Container(
-              margin: EdgeInsets.only(top: 10.0, left: 18.0, right: 18.0),
-              padding: EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.0),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                    offset: Offset(0, 0),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...cartItems.map(
-                    (item) => _buildProductItem(
-                      title: item.bookName,
-                      price: FormatPrice.formatPrice(
-                        item.unitPrice - (item.unitPrice * item.sale / 100),
-                      ),
-                      thumbnailUrl: item.bookThumbnail,
-                      originalPrice: FormatPrice.formatPrice(item.unitPrice),
-                      discount: item.sale.toInt(),
-                      quantity: 'x${item.quantity}',
-                      gift: ['Tặng kèm 1 bookmark', 'Tặng kèm 1 túi vải'],
-                    ),
-                  ),
-                  // _buildGiftItem(),
-                ],
-              ),
-            );
-          }
-        } else if (state is CartError) {
-          return Center(child: Text('Failed to load cart items'));
-        } else {
-          return SizedBox.shrink();
-        }
-      },
+              thumbnailUrl: item.bookThumbnail,
+              originalPrice: FormatPrice.formatPrice(item.unitPrice),
+              discount: item.saleOff.toInt(),
+              quantity: 'x${item.quantity}',
+              gift: ['Tặng kèm 1 bookmark', 'Tặng kèm 1 túi vải'],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -821,282 +825,254 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Widget _buildOrderSummarySection() {
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, state) {
-        if (state is CartLoading) {
-          return Center(child: CircularProgressIndicator());
-        } else if (state is CartLoaded) {
-          final cartItems =
-              state.cart.items.where((item) => item.isSelected).toList();
-          if (cartItems.isEmpty) {
-            return SizedBox.shrink();
-          } else {
-            final subtotal = cartItems.fold<double>(
-              0.0,
-              (sum, item) => sum + (item.unitPrice) * item.quantity,
-            );
+    if (checkoutItems.isEmpty) {
+      return SizedBox.shrink();
+    }
 
-            final shippingFee = 30000.0;
-            final discount = cartItems.fold<double>(
-              0.0,
-              (sum, item) =>
-                  sum + (item.unitPrice * (item.sale / 100)) * item.quantity,
-            );
-            final total = subtotal + shippingFee - discount;
+    final subtotal = checkoutItems.fold<double>(
+      0.0,
+      (sum, item) => sum + (item.unitPrice) * item.quantity,
+    );
 
-            return Container(
-              margin: EdgeInsets.only(bottom: 20.0, left: 18.0, right: 18.0),
-              padding: EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.0),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                    offset: Offset(0, 0),
-                  ),
-                ],
+    final shippingFee = 30000.0;
+    final discount = checkoutItems.fold<double>(
+      0.0,
+      (sum, item) =>
+          sum + (item.unitPrice * (item.saleOff / 100)) * item.quantity,
+    );
+    final total = subtotal + shippingFee - discount;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 20.0, left: 18.0, right: 18.0),
+      padding: EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16.0),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSummaryRow('Subtotal', FormatPrice.formatPrice(subtotal)),
+          _buildSummaryRow(
+            'Shipping Fee',
+            FormatPrice.formatPrice(shippingFee),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 12),
+            child: Text(
+              'Discounts:',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.black70,
+                fontWeight: FontWeight.w700,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSummaryRow(
-                    'Subtotal',
-                    FormatPrice.formatPrice(subtotal),
-                  ),
-                  _buildSummaryRow(
-                    'Shipping Fee',
-                    FormatPrice.formatPrice(shippingFee),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 12),
-                    child: Text(
-                      'Discounts:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.black70,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Padding(
-                    padding: EdgeInsets.only(left: 12),
-                    child: _buildSummaryRow(
-                      '- Shipping Voucher',
-                      '-${FormatPrice.formatPrice(0.0)}',
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 12),
-                    child: _buildSummaryRow(
-                      '- Member Voucher',
-                      '-${FormatPrice.formatPrice(0.0)}',
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 12),
-                    child: _buildSummaryRow(
-                      '- Product Voucher',
-                      '-${FormatPrice.formatPrice(discount)}',
-                    ),
-                  ),
-                  Divider(color: Colors.grey, height: 32.0),
-                  _buildSummaryRow(
-                    'Total Discounts',
-                    '-${FormatPrice.formatPrice(discount)}',
-                    isBold: true,
-                  ),
-                  _buildSummaryRow(
-                    'Total',
-                    FormatPrice.formatPrice(total),
-                    isBold: true,
-                  ),
-                ],
-              ),
-            );
-          }
-        } else if (state is CartError) {
-          return Center(child: Text('Failed to load cart items'));
-        } else {
-          return SizedBox.shrink();
-        }
-      },
+            ),
+          ),
+          SizedBox(height: 4),
+          Padding(
+            padding: EdgeInsets.only(left: 12),
+            child: _buildSummaryRow(
+              '- Shipping Voucher',
+              '-${FormatPrice.formatPrice(0.0)}',
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 12),
+            child: _buildSummaryRow(
+              '- Member Voucher',
+              '-${FormatPrice.formatPrice(0.0)}',
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 12),
+            child: _buildSummaryRow(
+              '- Product Voucher',
+              '-${FormatPrice.formatPrice(discount)}',
+            ),
+          ),
+          Divider(color: Colors.grey, height: 32.0),
+          _buildSummaryRow(
+            'Total Discounts',
+            '-${FormatPrice.formatPrice(discount)}',
+            isBold: true,
+          ),
+          _buildSummaryRow(
+            'Total',
+            FormatPrice.formatPrice(total),
+            isBold: true,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBottomNavigationBar() {
     final addressState = context.read<AddressBloc>().state;
 
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, state) {
-        if (state is CartLoading) {
-          return SizedBox(
-            height: 70,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        } else if (state is CartLoaded) {
-          final cartItems =
-              state.cart.items.where((item) => item.isSelected).toList();
-          if (cartItems.isEmpty) {
-            return SizedBox.shrink();
-          } else {
-            final totalPrice = cartItems.fold<double>(
-              0.0,
-              (sum, item) =>
-                  sum +
-                  (item.unitPrice * (1 - (item.sale / 100))) * item.quantity,
-            );
+    if (checkoutItems.isEmpty) {
+      return SizedBox.shrink();
+    }
 
-            final totalQuantity = cartItems.fold<int>(
-              0,
-              (sum, item) => sum + item.quantity,
-            );
+    final totalPrice = checkoutItems.fold<double>(
+      0.0,
+      (sum, item) =>
+          sum + (item.unitPrice * (1 - (item.saleOff / 100))) * item.quantity,
+    );
 
-            final discount = cartItems.fold<double>(
-              0.0,
-              (sum, item) =>
-                  sum + (item.unitPrice * (item.sale / 100)) * item.quantity,
-            );
-            return Container(
-              height: 160,
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 18.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                    offset: Offset(0, -2),
-                  ),
-                ],
+    final totalQuantity = checkoutItems.fold<int>(
+      0,
+      (sum, item) => sum + item.quantity,
+    );
+
+    final discount = checkoutItems.fold<double>(
+      0.0,
+      (sum, item) =>
+          sum + (item.unitPrice * (item.saleOff / 100)) * item.quantity,
+    );
+
+    return Container(
+      height: 160,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 18.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                ),
               ),
-              child: Column(
+              SizedBox(width: 4.0),
+              Text(
+                '($totalQuantity items)',
+                style: TextStyle(
+                  fontSize: 14.0,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.black70,
+                ),
+              ),
+              Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 22.0,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(width: 4.0),
-                      Text(
-                        '($totalQuantity items)',
-                        style: TextStyle(
-                          fontSize: 14.0,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.black70,
-                        ),
-                      ),
-                      Spacer(),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            FormatPrice.formatPrice(totalPrice + 30000),
-                            style: TextStyle(
-                              fontSize: 22.0,
-                              color: Colors.red,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Text(
-                            'Save ${FormatPrice.formatPrice(discount)}',
-                            style: TextStyle(
-                              letterSpacing: -1,
-                              fontSize: 14.0,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.black70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  Text(
+                    FormatPrice.formatPrice(totalPrice + 30000),
+                    style: TextStyle(
+                      fontSize: 22.0,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                  Container(
-                    margin: EdgeInsets.only(top: 10.0),
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed:
-                          (addressState is AddressLoaded &&
-                                  addressState.addresses.isNotEmpty &&
-                                  selectedPaymentId != null)
-                              ? () {
-                                // Validate address
-                                final receiver = addressState.addresses
-                                    .firstWhere(
-                                      (addr) => addr.isDefault == 1,
-                                      orElse: () => addressState.addresses[0],
-                                    );
-
-                                // Get payment method name
-                                final paymentState =
-                                    context.read<PaymentBloc>().state;
-                                String paymentMethodName = 'COD';
-                                if (paymentState is PaymentLoaded) {
-                                  final selectedPayment = paymentState.payments
-                                      .firstWhere(
-                                        (p) => p.id == selectedPaymentId,
-                                        orElse:
-                                            () => paymentState.payments.first,
-                                      );
-                                  paymentMethodName = selectedPayment.name;
-                                }
-                                context.read<OrderBloc>().add(
-                                  PlaceOrder(
-                                    note: _noteController.text.trim(),
-                                    paymentMethod: paymentMethodName,
-                                    cartId: state.cart.id,
-                                    phone: receiver.phoneNumber,
-                                    address: receiver.address,
-                                    name: receiver.recipientName,
-                                  ),
-                                );
-                              }
-                              : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            (addressState is AddressLoaded &&
-                                    addressState.addresses.isNotEmpty &&
-                                    selectedPaymentId != null)
-                                ? AppColors.primaryDark
-                                : Colors.grey,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                      ),
-                      child: Text(
-                        'Place Order',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                  Text(
+                    'Save ${FormatPrice.formatPrice(discount)}',
+                    style: TextStyle(
+                      letterSpacing: -1,
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black70,
                     ),
                   ),
                 ],
               ),
-            );
-          }
-        } else if (state is CartError) {
-          return SizedBox(
-            height: 70,
-            child: Center(child: Text('Failed to load cart items')),
-          );
-        } else {
-          return SizedBox.shrink();
-        }
-      },
+            ],
+          ),
+          Container(
+            margin: EdgeInsets.only(top: 10.0),
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed:
+                  (addressState is AddressLoaded &&
+                          addressState.addresses.isNotEmpty &&
+                          selectedPaymentId != null)
+                      ? () {
+                        // Validate address
+                        final receiver = addressState.addresses.firstWhere(
+                          (addr) => addr.isDefault == 1,
+                          orElse: () => addressState.addresses[0],
+                        );
+
+                        // Get payment method name
+                        final paymentState = context.read<PaymentBloc>().state;
+                        String paymentMethodName = 'COD';
+                        if (paymentState is PaymentLoaded) {
+                          final selectedPayment = paymentState.payments
+                              .firstWhere(
+                                (p) => p.id == selectedPaymentId,
+                                orElse: () => paymentState.payments.first,
+                              );
+                          paymentMethodName = selectedPayment.name;
+                        }
+
+                        // Convert checkoutItems to items format
+                        final items =
+                            checkoutItems
+                                .map(
+                                  (item) => {
+                                    'book_id': item.bookId,
+                                    'quantity': item.quantity,
+                                  },
+                                )
+                                .toList();
+
+                        context.read<OrderBloc>().add(
+                          CreateOrder(
+                            note: _noteController.text.trim(),
+                            paymentMethod: paymentMethodName,
+                            phone: receiver.phoneNumber,
+                            address: receiver.address,
+                            name: receiver.recipientName,
+                            items: items,
+                          ),
+                        );
+                      }
+                      : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    (addressState is AddressLoaded &&
+                            addressState.addresses.isNotEmpty &&
+                            selectedPaymentId != null)
+                        ? AppColors.primaryDark
+                        : Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+              ),
+              child: Text(
+                'Place Order',
+                style: TextStyle(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1132,6 +1108,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               elevation: 8,
             ),
           );
+          context.read<BookBloc>().add(LoadBooks());
           // Navigate back to home or orders screen after successful order
           final navigator = Navigator.of(context);
           Future.delayed(Duration(seconds: 3), () {

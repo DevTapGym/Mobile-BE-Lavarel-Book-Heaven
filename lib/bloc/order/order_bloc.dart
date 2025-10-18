@@ -11,6 +11,34 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<LoadDetailOrder>(_onLoadDetailOrder);
     on<PlaceOrder>(_onPlaceOrder);
     on<CreateOrder>(_onCreateOrder);
+    on<UpdateOrderStatus>(_onUpdateOrderStatus);
+  }
+
+  Future<void> _onUpdateOrderStatus(
+    UpdateOrderStatus event,
+    Emitter<OrderState> emit,
+  ) async {
+    emit(OrderLoading());
+    try {
+      final success = await _orderService.updateOrderStatus(
+        orderId: event.orderId,
+        statusId: event.statusId,
+        note: event.note,
+      );
+      if (success) {
+        final orders = await _orderService.loadAllOrder();
+        emit(
+          OrderLoaded(
+            orders: orders,
+            message: 'Order status updated successfully',
+          ),
+        );
+      } else {
+        emit(OrderError('Failed to update order status'));
+      }
+    } catch (e) {
+      emit(OrderError(e.toString()));
+    }
   }
 
   Future<void> _onCreateOrder(
