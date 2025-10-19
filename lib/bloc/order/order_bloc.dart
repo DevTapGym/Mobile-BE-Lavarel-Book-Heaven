@@ -104,6 +104,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         event.phone,
         event.address,
         event.name,
+        event.promotionId,
       );
       if (success) {
         final orders = await _orderService.loadAllOrder();

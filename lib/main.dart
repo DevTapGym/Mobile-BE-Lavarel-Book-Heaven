@@ -12,6 +12,7 @@ import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
 import 'package:heaven_book_app/bloc/order/order_bloc.dart';
 import 'package:heaven_book_app/bloc/payment/payment_bloc.dart';
+import 'package:heaven_book_app/bloc/promotion/promotion_bloc.dart';
 import 'package:heaven_book_app/bloc/user/user_bloc.dart';
 import 'package:heaven_book_app/screens/Orders/buy_now_screen.dart';
 import 'package:heaven_book_app/services/book_service.dart';
@@ -42,6 +43,7 @@ import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/services/order_service.dart';
 import 'package:heaven_book_app/services/payment_service.dart';
+import 'package:heaven_book_app/services/promotion_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
@@ -56,6 +58,7 @@ void main() {
   final addressService = AddressService(apiClient);
   final orderService = OrderService(apiClient);
   final paymentService = PaymentService(apiClient);
+  final promotionService = PromotionService(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -73,6 +76,9 @@ void main() {
         ),
         BlocProvider<OrderBloc>(create: (_) => OrderBloc(orderService)),
         BlocProvider<PaymentBloc>(create: (_) => PaymentBloc(paymentService)),
+        BlocProvider<PromotionBloc>(
+          create: (_) => PromotionBloc(promotionService),
+        ),
       ],
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {

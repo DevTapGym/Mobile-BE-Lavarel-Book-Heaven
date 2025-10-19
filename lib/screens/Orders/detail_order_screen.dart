@@ -426,7 +426,9 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                 children: [
                   _buildSummaryRow(
                     'Subtotal',
-                    FormatPrice.formatPrice(order.totalAmount),
+                    FormatPrice.formatPrice(
+                      (order.totalAmount) + (order.totalPromotionValue ?? 0),
+                    ),
                   ),
                   _buildSummaryRow(
                     'Shipping',
@@ -449,7 +451,10 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                   ),
                   Padding(
                     padding: EdgeInsets.only(left: 12),
-                    child: _buildSummaryRow('- Product Voucher', '-0 đ'),
+                    child: _buildSummaryRow(
+                      '- Product Voucher',
+                      '-${FormatPrice.formatPrice(order.totalPromotionValue ?? 0)}',
+                    ),
                   ),
                   const Divider(),
                   _buildSummaryRow(
@@ -507,22 +512,22 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
           },
         ),
 
-        Center(
-          child: TextButton(
-            onPressed: () {},
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Text(
-                  'Export Receipt',
-                  style: TextStyle(color: AppColors.primaryDark),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_ios, color: AppColors.primaryDark),
-              ],
-            ),
-          ),
-        ),
+        // Center(
+        //   child: TextButton(
+        //     onPressed: () {},
+        //     child: Row(
+        //       mainAxisSize: MainAxisSize.min,
+        //       children: const [
+        //         Text(
+        //           'Export Receipt',
+        //           style: TextStyle(color: AppColors.primaryDark),
+        //         ),
+        //         SizedBox(width: 8),
+        //         Icon(Icons.arrow_forward_ios, color: AppColors.primaryDark),
+        //       ],
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }

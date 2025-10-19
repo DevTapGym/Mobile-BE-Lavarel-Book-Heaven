@@ -122,18 +122,27 @@ class OrderService {
     String phone,
     String address,
     String name,
+    int? promotionId,
   ) async {
     try {
+      // Tạo dữ liệu gửi lên
+      final Map<String, dynamic> data = {
+        'note': note,
+        'payment_method': paymentMethod,
+        'cart_id': cartId,
+        'phone': phone,
+        'address': address,
+        'name': name,
+      };
+
+      // Nếu có chọn khuyến mãi thì thêm vào
+      if (promotionId != null) {
+        data['promotion_id'] = promotionId;
+      }
+
       final response = await apiClient.privateDio.post(
         '/order/place',
-        data: {
-          'note': note,
-          'payment_method': paymentMethod,
-          'cart_id': cartId,
-          'phone': phone,
-          'address': address,
-          'name': name,
-        },
+        data: data,
       );
       if (response.statusCode == 201) {
         return true;

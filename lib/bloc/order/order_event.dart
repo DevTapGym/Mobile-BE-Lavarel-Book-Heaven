@@ -61,6 +61,7 @@ class PlaceOrder extends OrderEvent {
   final String phone;
   final String address;
   final String name;
+  final int? promotionId;
 
   PlaceOrder({
     this.note,
@@ -69,6 +70,7 @@ class PlaceOrder extends OrderEvent {
     required this.phone,
     required this.address,
     required this.name,
+    this.promotionId,
   });
 
   @override

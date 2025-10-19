@@ -17,6 +17,7 @@ class Order {
   final String? email;
   final int? customerId;
   final bool? isParent;
+  final double? totalPromotionValue;
 
   Order({
     required this.id,
@@ -34,6 +35,7 @@ class Order {
     this.email,
     this.customerId,
     this.isParent,
+    this.totalPromotionValue,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,10 @@ class Order {
           json['has_return'] is bool
               ? json['has_return']
               : json['has_return'] == 1,
+      totalPromotionValue:
+          json['total_promotion_value'] != null
+              ? double.parse(json['total_promotion_value'].toString())
+              : null,
     );
   }
 
