@@ -12,6 +12,32 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     on<PlaceOrder>(_onPlaceOrder);
     on<CreateOrder>(_onCreateOrder);
     on<UpdateOrderStatus>(_onUpdateOrderStatus);
+    on<CreateReturnOrder>(_onReturnOrder);
+  }
+
+  Future<void> _onReturnOrder(
+    CreateReturnOrder event,
+    Emitter<OrderState> emit,
+  ) async {
+    emit(OrderLoading());
+    try {
+      final success = await _orderService.returnOrder(
+        returnOrder: event.returnOrder,
+      );
+      if (success) {
+        final orders = await _orderService.loadAllOrder();
+        emit(
+          OrderLoaded(
+            orders: orders,
+            message: 'Return order created successfully',
+          ),
+        );
+      } else {
+        emit(OrderError('Failed to create return order'));
+      }
+    } catch (e) {
+      emit(OrderError(e.toString()));
+    }
   }
 
   Future<void> _onUpdateOrderStatus(

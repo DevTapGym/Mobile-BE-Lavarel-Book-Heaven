@@ -14,6 +14,9 @@ class Order {
   final String paymentMethod;
   final List<OrderItem> items;
   final List<StatusOrder> statusHistory;
+  final String? email;
+  final int? customerId;
+  final bool? isParent;
 
   Order({
     required this.id,
@@ -28,6 +31,9 @@ class Order {
     required this.paymentMethod,
     required this.items,
     required this.statusHistory,
+    this.email,
+    this.customerId,
+    this.isParent,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -50,6 +56,12 @@ class Order {
           (json['status_histories'] as List)
               .map((status) => StatusOrder.fromJson(status))
               .toList(),
+      email: json['receiver_email'],
+      customerId: json['customer_id'],
+      isParent:
+          json['has_return'] is bool
+              ? json['has_return']
+              : json['has_return'] == 1,
     );
   }
 

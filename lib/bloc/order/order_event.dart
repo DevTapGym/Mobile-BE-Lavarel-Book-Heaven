@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:heaven_book_app/model/return_order.dart';
 
 abstract class OrderEvent extends Equatable {
   @override
@@ -6,6 +7,16 @@ abstract class OrderEvent extends Equatable {
 }
 
 class LoadAllOrders extends OrderEvent {}
+
+class CreateReturnOrder extends OrderEvent {
+  final ReturnOrder returnOrder;
+  final int customerId;
+
+  CreateReturnOrder({required this.returnOrder, required this.customerId});
+
+  @override
+  List<Object?> get props => [returnOrder];
+}
 
 class UpdateOrderStatus extends OrderEvent {
   final int orderId;

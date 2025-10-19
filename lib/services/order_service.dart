@@ -1,11 +1,43 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:heaven_book_app/model/order.dart';
+import 'package:heaven_book_app/model/return_order.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
 class OrderService {
   final ApiClient apiClient;
   OrderService(this.apiClient);
+
+  Future<bool> returnOrder({required ReturnOrder returnOrder}) async {
+    try {
+      final response = await apiClient.privateDio.post(
+        '/order/return/${returnOrder.id}',
+        data: returnOrder.toJson(),
+      );
+
+      if (response.statusCode == 201) {
+        debugPrint('✅ Return order created successfully');
+        return true;
+      } else {
+        debugPrint('❌ Failed to create return order: ${response.data}');
+        throw Exception(
+          'Failed to create return order: ${response.data['message']}',
+        );
+      }
+    } on DioException catch (dioError) {
+      debugPrint('❌ DioException: ${dioError.message}');
+
+      if (dioError.response != null) {
+        debugPrint('Status code: ${dioError.response?.statusCode}');
+        debugPrint('Data: ${dioError.response?.data}');
+        debugPrint('Headers: ${dioError.response?.headers}');
+      }
+      throw Exception('Lỗi khi tạo đơn hàng: ${dioError.message}');
+    } catch (e) {
+      debugPrint('🚨 Error creating return order: $e');
+      throw Exception('Error creating return order: $e');
+    }
+  }
 
   Future<bool> updateOrderStatus({
     required int orderId,
