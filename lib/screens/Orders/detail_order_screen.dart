@@ -43,7 +43,11 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppbarCustomWidget(title: 'Order Details'),
+      appBar: AppbarCustomWidget(
+        title:
+            //'Order Details'
+            'Chi tiết đơn hàng',
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -125,7 +129,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                       );
                     } else {
                       return const Center(
-                        child: Text('No order details available.'),
+                        //child: Text('No order details available.'),
+                        child: Text('Không có chi tiết đơn hàng.'),
                       );
                     }
                   },
@@ -151,7 +156,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Status Order:',
+              //'Status Order:',
+              'Trạng thái đơn hàng:',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.black,
@@ -280,7 +286,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                           color: AppColors.primary,
                         ),
                         label: Text(
-                          showAll ? 'Show less' : 'Show more',
+                          //showAll ? 'Show less' : 'Show more',
+                          showAll ? 'Thu gọn' : 'Xem thêm',
                           style: TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
@@ -339,7 +346,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Shipping address:',
+                    //'Shipping address:',
+                    'Địa chỉ giao hàng:',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.black,
@@ -357,7 +365,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                             const Icon(Icons.location_on, color: Colors.blue),
                             const SizedBox(width: 8),
                             Text(
-                              'Home',
+                              //'Home',
+                              'Nhà riêng',
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontSize: 16,
@@ -409,7 +418,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Order summary',
+          //'Order summary',
+          'Tóm tắt đơn hàng',
           style: TextStyle(
             fontSize: 18,
             color: Colors.black,
@@ -425,40 +435,53 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSummaryRow(
-                    'Subtotal',
+                    //'Subtotal',
+                    'Tạm tính',
                     FormatPrice.formatPrice(
                       (order.totalAmount) + (order.totalPromotionValue ?? 0),
                     ),
                   ),
                   _buildSummaryRow(
-                    'Shipping',
+                    //'Shipping',
+                    'Phí vận chuyển',
                     FormatPrice.formatPrice(order.shippingFee),
                   ),
                   Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: Text(
-                      'Discounts:',
+                      //'Discounts:',
+                      'Giảm giá:',
                       style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ),
                   Padding(
                     padding: EdgeInsets.only(left: 12),
-                    child: _buildSummaryRow('- Shipping Voucher', '-0 đ'),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 12),
-                    child: _buildSummaryRow('- Member Discount', '-0 đ'),
+                    child: _buildSummaryRow(
+                      //'- Shipping Voucher',
+                      '- Giảm giá vận chuyển',
+                      '-0 đ',
+                    ),
                   ),
                   Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: _buildSummaryRow(
-                      '- Product Voucher',
+                      //'- Member Discount',
+                      '- Giảm giá thành viên',
+                      '-0 đ',
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: _buildSummaryRow(
+                      //'- Product Voucher',
+                      '- Giảm giá sản phẩm',
                       '-${FormatPrice.formatPrice(order.totalPromotionValue ?? 0)}',
                     ),
                   ),
                   const Divider(),
                   _buildSummaryRow(
-                    'Total',
+                    //'Total',
+                    'Tổng cộng',
                     FormatPrice.formatPrice(
                       order.totalAmount + order.shippingFee,
                     ),
@@ -480,7 +503,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Order details',
+          //'Order details',
+          'Chi tiết đơn hàng',
           style: TextStyle(
             fontSize: 18,
             color: Colors.black,
@@ -494,16 +518,41 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
               final order = state.order;
               return Column(
                 children: [
-                  _buildDetailRow('Order Number:', order.orderNumber),
                   _buildDetailRow(
-                    'Order Date:',
+                    //'Order Number:',
+                    'Mã đơn hàng:',
+                    order.orderNumber,
+                  ),
+                  _buildDetailRow(
+                    //'Order Date:',
+                    'Ngày đặt hàng:',
                     '${order.orderDate.hour}:${order.orderDate.minute} ${order.orderDate.day}-${order.orderDate.month}-${order.orderDate.year}',
                   ),
-                  _buildDetailRow('Payment Method:', order.paymentMethod),
-                  _buildDetailRow('Receiver Name:', order.receiverName),
-                  _buildDetailRow('Receiver Phone:', order.receiverPhone),
-                  _buildDetailRow('Receiver Address:', order.receiverAddress),
-                  _buildDetailRow('Note:', order.note),
+                  _buildDetailRow(
+                    //'Payment Method:',
+                    'Phương thức thanh toán:',
+                    order.paymentMethod,
+                  ),
+                  _buildDetailRow(
+                    //'Receiver Name:',
+                    'Tên người nhận:',
+                    order.receiverName,
+                  ),
+                  _buildDetailRow(
+                    //'Receiver Phone:',
+                    'Số điện thoại người nhận:',
+                    order.receiverPhone,
+                  ),
+                  _buildDetailRow(
+                    //'Receiver Address:',
+                    'Địa chỉ người nhận:',
+                    order.receiverAddress,
+                  ),
+                  _buildDetailRow(
+                    //'Note:',
+                    'Ghi chú:',
+                    order.note,
+                  ),
                 ],
               );
             } else {
@@ -651,9 +700,13 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.black54, fontSize: 15),
+          SizedBox(
+            width: 150,
+            child: Text(
+              softWrap: true,
+              label,
+              style: const TextStyle(color: Colors.black54, fontSize: 15),
+            ),
           ),
           SizedBox(
             width: 180,
@@ -692,7 +745,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
               child: ElevatedButton.icon(
                 onPressed: () {},
                 label: Text(
-                  'Review',
+                  //'Review',
+                  'Đánh giá',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -731,7 +785,8 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                   ),
                 ),
                 child: Text(
-                  'Buy Again',
+                  //'Buy Again',
+                  'Mua lại',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

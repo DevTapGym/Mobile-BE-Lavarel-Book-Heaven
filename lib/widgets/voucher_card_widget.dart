@@ -137,7 +137,9 @@ class VoucherCardWidget extends StatelessWidget {
                   Text('Có hiệu lực đến: $validUntil'),
                   if (showRedeemButton) ...[
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/detail-voucher');
+                      },
                       style: TextButton.styleFrom(
                         backgroundColor: AppColors.primaryDark,
                         padding: const EdgeInsets.symmetric(
@@ -148,7 +150,8 @@ class VoucherCardWidget extends StatelessWidget {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: const Text(
-                        'Redeem',
+                        //'Redeem',
+                        'Đổi ngay',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

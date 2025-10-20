@@ -131,7 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
 
                       const Text(
-                        'Login to your account',
+                        //'Login to your account',
+                        'Đăng nhập vào tài khoản của bạn',
                         style: TextStyle(
                           fontSize: 18,
                           color: AppColors.card,
@@ -312,7 +313,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: TextButton(
                           onPressed: _navigateToForgotPassword,
                           child: const Text(
-                            'Forgot Password?',
+                            //'Forgot Password?',
+                            'Quên mật khẩu?',
                             style: TextStyle(
                               color: AppColors.primaryDark,
                               fontWeight: FontWeight.w600,
@@ -341,7 +343,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           child: const Text(
-                            'Login',
+                            //'Login',
+                            'Đăng nhập',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -361,7 +364,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Or continue with',
+                              //'Or continue with',
+                              'Hoặc tiếp tục với',
                               style: TextStyle(
                                 color: AppColors.text,
                                 fontSize: 14,
@@ -488,13 +492,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            "Don't have an account? ",
+                            //"Don't have an account? ",
+                            'Bạn chưa có tài khoản? ',
                             style: TextStyle(color: AppColors.text),
                           ),
                           GestureDetector(
                             onTap: _navigateToSignUp,
                             child: const Text(
-                              'Sign Up',
+                              //'Sign Up',
+                              'Đăng ký',
                               style: TextStyle(
                                 color: AppColors.primaryDark,
                                 fontWeight: FontWeight.w600,

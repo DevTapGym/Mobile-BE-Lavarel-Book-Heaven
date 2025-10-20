@@ -151,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           } else if (state is BookLoaded) {
                             return BookSectionWidget(
-                              title: 'Books on Sale',
+                              //title: 'Books on Sale',
+                              title: 'Sách Giảm Giá\nKhông Mua Đừng Tiếc Nhá',
                               books: state.saleOffBooks,
                               onViewAll: () {},
                               onBookTap: (book) {
@@ -181,7 +182,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           } else if (state is BookLoaded) {
                             return BookSectionWidget(
-                              title: 'Popular Books',
+                              //title: 'Popular Books',
+                              title: 'Xu Hướng Đọc Hiện Nay',
                               books: state.popularBooks,
                               onViewAll: () {},
                               onBookTap: (book) {
@@ -317,7 +319,8 @@ class _HomeScreenState extends State<HomeScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search books...',
+          //hintText: 'Search books...',
+          hintText: 'Tìm sách bạn yêu thích...',
           hintStyle: TextStyle(color: Colors.grey[500]),
           suffixIcon: IconButton(
             icon: const Icon(Icons.search, color: AppColors.primaryDark),
@@ -371,8 +374,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
           final List<Map<String, dynamic>> banners = [
             {
-              'title': 'New Books',
-              'subtitle': 'Find your next favorite book',
+              'title': 'Sách mới mỗi ngày',
+              'subtitle': 'Khám phá sách mới nào!',
               'icon': Icons.book,
               'gradient': const LinearGradient(
                 begin: Alignment.topLeft,
@@ -388,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             {
               'title': 'Best Sellers 2025',
-              'subtitle': 'Explore top-rated books',
+              'subtitle': 'Khám phá sách bán chạy',
               'icon': Icons.star,
               'gradient': const LinearGradient(
                 begin: Alignment.topLeft,
@@ -403,8 +406,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       : null,
             },
             {
-              'title': 'New Arrivals',
-              'subtitle': 'Fresh books just for you',
+              'title': 'Mới nhập nóng hỏi',
+              'subtitle': 'Cập nhật xu hướng mới',
               'icon': Icons.new_releases,
               'gradient': const LinearGradient(
                 begin: Alignment.topLeft,
@@ -422,8 +425,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       : null,
             },
             {
-              'title': 'Exclusive Offers',
-              'subtitle': 'Get special discounts',
+              'title': 'Ưu đãi độc quyền',
+              'subtitle': 'Săn ngay kẻo lỡ',
               'icon': Icons.local_offer,
               'gradient': const LinearGradient(
                 begin: Alignment.topLeft,
@@ -544,7 +547,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                         elevation: 0,
                                       ),
                                       child: const Text(
-                                        'Explore Now',
+                                        //'Explore Now',
+                                        'Khám Phá Ngay',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -677,7 +681,8 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Categories',
+              //'Categories',
+              'Thể Loại Sách',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -735,7 +740,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Just for You',
+                      //'Just for You',
+                      'Chỉ mình bạn',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -750,7 +756,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Text(
-                      'Personalized recommendations',
+                      //'Personalized recommendations',
+                      'Gợi ý rành\nriêng cho bạn',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.9),
@@ -1108,10 +1115,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 12),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Text(
-                        'Bestsellers This Year',
+                        'Bestsellers của năm',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -1126,7 +1133,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Text(
-                        'Top selling books in 2025',
+                        //'Top selling books in 2025',
+                        'Những cuốn sách bán chạy nhất năm 2025',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.9),
@@ -1152,7 +1160,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icon(Icons.trending_up, color: Colors.white, size: 18),
                     SizedBox(width: 6),
                     Text(
-                      'Updated Daily',
+                      //'Updated Daily',
+                      'Cập nhật hàng ngày',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,

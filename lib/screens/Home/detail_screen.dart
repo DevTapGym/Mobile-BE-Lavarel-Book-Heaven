@@ -265,7 +265,8 @@ class _DetailScreenState extends State<DetailScreen>
                         return const Center(child: CircularProgressIndicator());
                       } else if (state is BookDetailLoaded) {
                         return BookSectionWidget(
-                          title: 'Popular Books',
+                          //title: 'Popular Books',
+                          title: 'Có thể bạn cũng thích',
                           books: state.relatedBooks,
                           onViewAll: () {},
                           onBookTap: (book) {
@@ -663,10 +664,15 @@ class _DetailScreenState extends State<DetailScreen>
                     const SizedBox(width: 8),
                     Text(
                       book.quantity > 10
-                          ? 'In Stock (${book.quantity} available)'
+                          ? //'In Stock (${book.quantity} available)'
+                          'Còn hàng (${book.quantity} sản phẩm)'
                           : book.quantity > 0
-                          ? 'Only ${book.quantity} left in stock!'
-                          : 'Out of Stock',
+                          ?
+                          //'Only ${book.quantity} left in stock!'
+                          'Chỉ còn ${book.quantity} sản phẩm!'
+                          :
+                          //'Out of Stock',
+                          'Hết hàng',
                       style: TextStyle(
                         color: book.quantity > 0 ? Colors.green : Colors.red,
                         fontWeight: FontWeight.w600,
@@ -744,23 +750,14 @@ class _DetailScreenState extends State<DetailScreen>
                 setState(() {
                   isFavorite = !isFavorite;
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isFavorite
-                          ? 'Added to wishlist!'
-                          : 'Removed from wishlist!',
-                    ),
-                    backgroundColor: AppColors.primary,
-                  ),
-                );
               },
               icon: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: isFavorite ? Colors.red : AppColors.primary,
               ),
               label: Text(
-                'Wishlist',
+                //'Wishlist',
+                'Yêu thích',
                 style: TextStyle(
                   fontSize: 16,
                   color: AppColors.primary,
@@ -788,7 +785,7 @@ class _DetailScreenState extends State<DetailScreen>
         children: [
           TabBar(
             controller: _tabController,
-            tabs: const [Tab(text: 'Description'), Tab(text: 'Details')],
+            tabs: const [Tab(text: 'Mô tả'), Tab(text: 'Chi tiết')],
             labelColor: AppColors.primary,
             unselectedLabelColor: Colors.grey,
             indicatorColor: AppColors.primary,
@@ -824,7 +821,8 @@ class _DetailScreenState extends State<DetailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    book.description ?? 'No description available.',
+                    book.description ?? //'No description available.',
+                        'Mô tả chưa được cập nhật.',
                     style: TextStyle(
                       fontSize: 16,
                       height: 1.6,
@@ -833,7 +831,8 @@ class _DetailScreenState extends State<DetailScreen>
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'Key Features:',
+                    //'Key Features:',
+                    'Tính năng nổi bật:',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -847,7 +846,8 @@ class _DetailScreenState extends State<DetailScreen>
                       .where((f) => !f.featureName.contains('-'))
                       .isEmpty)
                     const Text(
-                      'No features available.',
+                      //'No features available.',
+                      'Chưa có tính năng nổi bật.',
                       style: TextStyle(fontSize: 14, color: Colors.grey),
                     )
                   else
@@ -909,7 +909,8 @@ class _DetailScreenState extends State<DetailScreen>
                 children: [
                   if (attributeFeatures.isEmpty)
                     const Text(
-                      'No details available.',
+                      //'No details available.',
+                      'Chưa có chi tiết nào.',
                       style: TextStyle(fontSize: 14, color: Colors.grey),
                     )
                   else
@@ -999,7 +1000,8 @@ class _DetailScreenState extends State<DetailScreen>
                   size: 20,
                 ),
                 label: Text(
-                  'Add to Cart',
+                  //'Add to Cart',
+                  'Thêm vào giỏ hàng',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1059,7 +1061,8 @@ class _DetailScreenState extends State<DetailScreen>
                   ),
                 ),
                 child: Text(
-                  'Buy Now',
+                  //'Buy Now',
+                  'Mua ngay',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1120,14 +1123,16 @@ class _DetailScreenState extends State<DetailScreen>
 
               // Title
               const Text(
-                'Share Product',
+                //'Share Product',
+                'Chia sẻ sản phẩm',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
               // Section 1: Social Media
               const Text(
-                'Share to social media',
+                //'Share to social media',
+                'Chia sẻ lên mạng xã hội',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

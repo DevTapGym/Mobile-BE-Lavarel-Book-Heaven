@@ -51,37 +51,44 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
 
   void _validateAndSubmit() {
     if (nameController.text.trim().isEmpty) {
-      _showErrorSnackBar('Please enter recipient name');
+      //_showErrorSnackBar('Please enter recipient name');
+      _showErrorSnackBar('Vui lòng nhập tên người nhận');
       return;
     }
 
     if (phoneController.text.trim().isEmpty) {
-      _showErrorSnackBar('Please enter phone number');
+      //_showErrorSnackBar('Please enter phone number');
+      _showErrorSnackBar('Vui lòng nhập số điện thoại');
       return;
     }
 
     if (!RegExp(r'^[0-9]{10,11}$').hasMatch(phoneController.text.trim())) {
-      _showErrorSnackBar('Please enter a valid phone number (10-11 digits)');
+      //_showErrorSnackBar('Please enter a valid phone number (10-11 digits)');
+      _showErrorSnackBar('Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số)');
       return;
     }
 
     if (selectedProvince == null) {
-      _showErrorSnackBar('Please select Province/City');
+      //_showErrorSnackBar('Please select Province/City');
+      _showErrorSnackBar('Vui lòng chọn Tỉnh/Thành phố');
       return;
     }
 
     if (selectedDistrict == null) {
-      _showErrorSnackBar('Please select District');
+      //_showErrorSnackBar('Please select District');
+      _showErrorSnackBar('Vui lòng chọn Quận/Huyện');
       return;
     }
 
     if (selectedWard == null) {
-      _showErrorSnackBar('Please select Ward/Commune');
+      //_showErrorSnackBar('Please select Ward/Commune');
+      _showErrorSnackBar('Vui lòng chọn Phường/Xã');
       return;
     }
 
     if (selectedTag == null) {
-      _showErrorSnackBar('Please select an address tag');
+      //_showErrorSnackBar('Please select an address tag');
+      _showErrorSnackBar('Vui lòng chọn thẻ địa chỉ');
       return;
     }
 
@@ -157,7 +164,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Address added successfully!',
+                      //'Address added successfully!',
+                      'Thêm địa chỉ thành công!',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -188,7 +196,11 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppbarCustomWidget(title: 'New Address'),
+        appBar: AppbarCustomWidget(
+          title:
+              //'New Address'
+              'Địa chỉ mới',
+        ),
         body: Container(
           color: AppColors.background,
           height: double.infinity,
@@ -212,19 +224,22 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextfieldCustomWidget(
-                      label: 'Name',
+                      //label: 'Name',
+                      label: 'Tên',
                       controller: nameController,
                     ),
                     SizedBox(height: 6.0),
 
                     TextfieldCustomWidget(
-                      label: 'Phone',
+                      //label: 'Phone',
+                      label: 'Số điện thoại',
                       controller: phoneController,
                     ),
                     SizedBox(height: 6.0),
 
                     LocationPickerField(
-                      label: 'Location Information',
+                      //label: 'Location Information',
+                      label: 'Thông tin địa chỉ',
                       controller: addressController,
                       value:
                           selectedProvince != null &&
@@ -257,7 +272,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                             return StatefulBuilder(
                               builder: (context, setStateDialog) {
                                 return AlertDialog(
-                                  title: Text('Select Location'),
+                                  title: Text(
+                                    //'Select Location'
+                                    'Chọn địa điểm',
+                                  ),
                                   backgroundColor: Colors.white,
                                   shadowColor: Colors.black26,
                                   content: Column(
@@ -267,7 +285,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                         dropdownColor: Colors.white,
                                         isExpanded: true,
                                         decoration: InputDecoration(
-                                          labelText: 'Province/City',
+                                          //labelText: 'Province/City',
+                                          labelText: 'Tỉnh/Thành phố',
                                         ),
                                         value: tempProvince,
                                         items:
@@ -297,7 +316,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                         dropdownColor: Colors.white,
                                         isExpanded: true,
                                         decoration: InputDecoration(
-                                          labelText: 'District',
+                                          //labelText: 'District',
+                                          labelText: 'Quận/Huyện',
                                         ),
                                         value: tempDistrict,
                                         items:
@@ -325,7 +345,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                         dropdownColor: Colors.white,
                                         isExpanded: true,
                                         decoration: InputDecoration(
-                                          labelText: 'Ward/Commune',
+                                          //labelText: 'Ward/Commune',
+                                          labelText: 'Phường/Xã',
                                         ),
                                         value: tempWard,
                                         items:
@@ -351,7 +372,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                         Navigator.of(context).pop();
                                       },
                                       child: Text(
-                                        'Cancel',
+                                        //'Cancel',
+                                        'Hủy',
                                         style: TextStyle(color: Colors.black54),
                                       ),
                                     ),
@@ -391,7 +413,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                               }
                                               : null,
                                       child: Text(
-                                        'Done',
+                                        //'Done',
+                                        'Xong',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -409,7 +432,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                     SizedBox(height: 6.0),
 
                     TextfieldCustomWidget(
-                      label: 'Address Description',
+                      //label: 'Address Description',
+                      label: 'Mô tả địa chỉ',
                       controller: subAddressController,
                     ),
                     SizedBox(height: 6.0),
@@ -420,7 +444,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                           return Center(child: CircularProgressIndicator());
                         } else if (state is AddressError) {
                           return Center(
-                            child: Text('Failed to load addresses'),
+                            child: Text(
+                              //'Failed to load addresses'
+                              'Tải địa chỉ thất bại',
+                            ),
                           );
                         } else if (state is AddressLoaded) {
                           return AddressTagWidget(
@@ -447,7 +474,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(
-                              'Set as Default',
+                              //'Set as Default',
+                              'Đặt làm mặc định',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -499,7 +527,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                   backgroundColor: AppColors.primaryDark,
                 ),
                 child: Text(
-                  'Done',
+                  //'Done',
+                  'Xong',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -510,8 +539,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
             ),
           ],
         ),
-      ), // ← Closing for Scaffold
-    ); // ← Closing for BlocListener
+      ),
+    );
   }
 }
 
@@ -533,7 +562,8 @@ class AddressTagWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Address Tags',
+          //'Address Tags',
+          'Thẻ địa chỉ',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

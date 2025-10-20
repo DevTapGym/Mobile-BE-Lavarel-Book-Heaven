@@ -84,7 +84,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 40),
 
                       const Text(
-                        'Create Account',
+                        //'Create Account',
+                        'Tạo Tài Khoản',
                         style: TextStyle(
                           fontSize: 40,
                           fontWeight: FontWeight.bold,
@@ -100,7 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
 
                       const Text(
-                        'Sign up to get started',
+                        //'Sign up to get started',
+                        'Đăng ký để bắt đầu thoi nào!',
                         style: TextStyle(
                           fontSize: 18,
                           color: AppColors.card,
@@ -161,7 +163,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           enabled: !_isLoading,
                           keyboardType: TextInputType.name,
                           decoration: InputDecoration(
-                            hintText: 'Full Name',
+                            //hintText: 'Full Name',
+                            hintText: 'Tên Đầy Đủ',
                             hintStyle: const TextStyle(color: AppColors.text),
                             errorStyle: const TextStyle(
                               fontSize: 14,
@@ -191,10 +194,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your full name';
+                              //return 'Please enter your full name';
+                              return 'Vui lòng nhập tên của bạn';
                             }
                             if (value.length < 2) {
-                              return 'Name must be at least 2 characters';
+                              //return 'Name must be at least 2 characters';
+                              return 'Tên phải có ít nhất 2 ký tự chứ';
                             }
                             return null;
                           },
@@ -250,12 +255,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
+                              //return 'Please enter your email';
+                              return 'Vui lòng nhập email của bạn';
                             }
                             if (!RegExp(
                               r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                             ).hasMatch(value)) {
-                              return 'Please enter a valid email';
+                              //return 'Please enter a valid email';
+                              return 'Vui lòng nhập email hợp lệ';
                             }
                             return null;
                           },
@@ -281,7 +288,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           enabled: !_isLoading,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
-                            hintText: 'Password',
+                            //hintText: 'Password',
+                            hintText: 'Mật Khẩu',
                             errorStyle: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -324,10 +332,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
+                              //return 'Please enter your password';
+                              return 'Vui lòng nhập mật khẩu của bạn';
                             }
                             if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
+                              //return 'Password must be at least 6 characters';
+                              return 'Mật khẩu phải có ít nhất 6 ký tự';
                             }
                             return null;
                           },
@@ -353,7 +363,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           enabled: !_isLoading,
                           obscureText: !_isConfirmPasswordVisible,
                           decoration: InputDecoration(
-                            hintText: 'Confirm Password',
+                            //hintText: 'Confirm Password',
+                            hintText: 'Xác Nhận Mật Khẩu',
                             errorStyle: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -397,10 +408,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
+                              //return 'Please confirm your password';
+                              return 'Vui lòng xác nhận mật khẩu của bạn';
                             }
                             if (value != _passwordController.text) {
-                              return 'Passwords do not match';
+                              //return 'Passwords do not match';
+                              return 'Mật khẩu không khớp';
                             }
                             return null;
                           },
@@ -454,7 +467,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                   )
                                   : const Text(
-                                    'Sign Up',
+                                    //'Sign Up',
+                                    'Đăng Ký',
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
@@ -469,7 +483,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            'Already have an account? ',
+                            //'Already have an account? ',
+                            'Bạn đã có tài khoản? ',
                             style: TextStyle(color: AppColors.text),
                           ),
                           GestureDetector(
@@ -480,7 +495,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       Navigator.pop(context);
                                     },
                             child: const Text(
-                              'Sign In',
+                              //'Sign In',
+                              'Đăng Nhập',
                               style: TextStyle(
                                 color: AppColors.primaryDark,
                                 fontWeight: FontWeight.w600,

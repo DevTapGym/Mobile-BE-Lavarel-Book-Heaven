@@ -115,7 +115,8 @@ class _ForgotScreenState extends State<ForgotScreen> {
                             const SizedBox(height: 24),
                             // Title
                             Text(
-                              'Forgot Password',
+                              //'Forgot Password',
+                              'Quên mật khẩu',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
@@ -133,7 +134,8 @@ class _ForgotScreenState extends State<ForgotScreen> {
                             const SizedBox(height: 12),
                             // Subtitle
                             Text(
-                              'Enter your email to receive a OTP code for password reset',
+                              //'Enter your email to receive a OTP code for password reset',
+                              'Nhập email của bạn để nhận mã OTP đặt lại mật khẩu',
                               style: TextStyle(
                                 color: AppColors.text,
                                 fontSize: 16,
@@ -238,7 +240,8 @@ class _ForgotScreenState extends State<ForgotScreen> {
                                 elevation: 4,
                               ),
                               child: Text(
-                                'Send Code',
+                                //'Send Code',
+                                'Gửi mã',
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,

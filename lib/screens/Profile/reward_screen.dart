@@ -31,7 +31,8 @@ class RewardScreen extends StatelessWidget {
             },
           ),
           title: Text(
-            'Rewards',
+            //'Rewards',
+            'Phần thưởng',
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -39,7 +40,7 @@ class RewardScreen extends StatelessWidget {
             ),
           ),
           bottom: TabBar(
-            tabs: const [Tab(text: 'Voucher'), Tab(text: 'Member')],
+            tabs: const [Tab(text: 'Mã giảm giá'), Tab(text: 'Thành viên')],
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
@@ -235,7 +236,8 @@ class _VoucherTabState extends State<VoucherTab> {
                     if (promotions.isNotEmpty)
                       _buildVoucherSection(
                         context,
-                        title: 'Discount vouchers',
+                        //title: 'Discount vouchers',
+                        title: 'Mã giảm giá',
                         promotions: promotions,
                       ),
                   ],
@@ -512,7 +514,8 @@ Widget _buildMemberCard() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Maintenance conditions',
+                //'Maintenance conditions',
+                'Điều kiện duy trì',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8.0),
@@ -525,7 +528,8 @@ Widget _buildMemberCard() {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Order',
+                          //'Order',
+                          'Đơn hàng',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 4.0),
@@ -566,7 +570,8 @@ Widget _buildMemberCard() {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Spending',
+                          //'Spending',
+                          'Chi tiêu',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 4.0),
@@ -600,7 +605,8 @@ Widget _buildMemberCard() {
               ),
               SizedBox(height: 14.0),
               Text(
-                'Ranking will be updated after 12-31-2025',
+                //'Ranking will be updated after 12-31-2025',
+                'Xếp hạng sẽ được cập nhật sau 31-12-2025',
                 style: TextStyle(color: Colors.black54, fontSize: 13),
               ),
             ],
@@ -635,7 +641,8 @@ Widget _buildMemberBenefits() {
             Icon(Icons.info_outline, color: AppColors.primaryDark, size: 28.0),
             SizedBox(width: 8.0),
             Text(
-              'Membership benefits',
+              //'Membership benefits',
+              'Lợi ích thành viên',
               style: TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.bold,
@@ -646,17 +653,20 @@ Widget _buildMemberBenefits() {
         ),
         SizedBox(height: 8.0),
         Text(
-          '- Free shipping over 200k',
+          //'- Free shipping over 200k',
+          '- Miễn phí vận chuyển đơn trên 200k',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
         ),
         SizedBox(height: 4.0),
         Text(
-          '- 10% off orders above 200k',
+          //'- 10% off orders above 200k',
+          '- Giảm 10% đơn hàng trên 200k',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
         ),
         SizedBox(height: 4.0),
         Text(
-          '- 30% off on birthday',
+          //'- 30% off on birthday',
+          '- Giảm 30% vào ngày sinh nhật',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
         ),
       ],
@@ -675,7 +685,8 @@ Widget _buildMemberVouchers() {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Points Redemption',
+                  //'Points Redemption',
+                  'Đổi điểm',
                   style: TextStyle(
                     color: AppColors.text,
                     fontSize: 18,
@@ -705,7 +716,8 @@ Widget _buildMemberVouchers() {
       ),
       SizedBox(height: 8.0),
       VoucherCardWidget(
-        title: 'Save up to 20k',
+        //title: 'Save up to 20k',
+        title: 'Tiết kiệm đến 20k',
         minimumOrder: '80k',
         points: 2000,
         validUntil: '12-12-2015',
@@ -713,7 +725,8 @@ Widget _buildMemberVouchers() {
         showPoints: true,
       ),
       VoucherCardWidget(
-        title: 'Save up to 20k',
+        //title: 'Save up to 20k',
+        title: 'Tiết kiệm đến 20k',
         minimumOrder: '80k',
         points: 2000,
         validUntil: '12-12-2015',
@@ -721,7 +734,8 @@ Widget _buildMemberVouchers() {
         showPoints: true,
       ),
       VoucherCardWidget(
-        title: 'Save up to 20k',
+        //title: 'Save up to 20k',
+        title: 'Tiết kiệm đến 50k',
         minimumOrder: '80k',
         points: 2000,
         validUntil: '12-12-2015',

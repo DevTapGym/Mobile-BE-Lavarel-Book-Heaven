@@ -28,6 +28,7 @@ class BookSectionWidget extends StatelessWidget {
           children: [
             Text(
               title,
+              softWrap: true,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -38,7 +39,8 @@ class BookSectionWidget extends StatelessWidget {
               TextButton(
                 onPressed: onViewAll,
                 child: const Text(
-                  'View All',
+                  //'View All',
+                  'Xem tất cả',
                   style: TextStyle(
                     color: AppColors.primaryDark,
                     fontWeight: FontWeight.w600,

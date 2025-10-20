@@ -55,7 +55,10 @@ class _CartScreenState extends State<CartScreen> {
     if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No items selected to remove'),
+          content: Text(
+            //'No items selected to remove'
+            'Chưa có mục nào được chọn để xóa',
+          ),
           duration: Duration(seconds: 2),
           backgroundColor: AppColors.primaryDark,
         ),
@@ -73,7 +76,10 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Selected items removed from cart'),
+            content: Text(
+              //'Selected items removed from cart'
+              'Đã xóa các mục đã chọn khỏi giỏ hàng',
+            ),
             duration: Duration(seconds: 2),
             backgroundColor: AppColors.primaryDark,
           ),
@@ -113,7 +119,8 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   SizedBox(width: 48),
                   Text(
-                    'Order Summary',
+                    //'Order Summary',
+                    'Tóm tắt đơn hàng',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -132,15 +139,19 @@ class _CartScreenState extends State<CartScreen> {
               // Subtitle
               Center(
                 child: Text(
-                  'Please review your order before checkout (${selectedItems.length} items)',
+                  //'Please review your order before checkout (${selectedItems.length} items)',
+                  'Vui lòng kiểm tra đơn hàng của bạn trước khi thanh toán (${selectedItems.length} sản phẩm)',
                   style: TextStyle(fontSize: 15, color: Colors.black54),
                 ),
               ),
               SizedBox(height: 18),
 
               // Order summary details với dữ liệu thật
-              _buildSummaryRow('Subtotal', FormatPrice.formatPrice(subtotal)),
-              _buildSummaryRow('Shipping', FormatPrice.formatPrice(shipping)),
+              _buildSummaryRow('Tạm tính', FormatPrice.formatPrice(subtotal)),
+              _buildSummaryRow(
+                'Phí vận chuyển',
+                FormatPrice.formatPrice(shipping),
+              ),
 
               // Hiển thị discounts nếu có savings
               if (totalSavings > 0) ...[
@@ -148,7 +159,7 @@ class _CartScreenState extends State<CartScreen> {
                 Padding(
                   padding: EdgeInsets.only(left: 12),
                   child: Text(
-                    'Discounts:',
+                    'Giảm giá:',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.black70,
@@ -160,14 +171,14 @@ class _CartScreenState extends State<CartScreen> {
                 Padding(
                   padding: EdgeInsets.only(left: 12),
                   child: _buildSummaryRow(
-                    '• Product Discount',
+                    '- Giảm giá từ sale',
                     '-${FormatPrice.formatPrice(totalSavings)}',
                   ),
                 ),
                 SizedBox(height: 8),
                 Divider(),
                 _buildSummaryRow(
-                  'Total Discounts',
+                  'Tổng tiết kiệm',
                   '-${FormatPrice.formatPrice(totalSavings)}',
                   isBold: true,
                 ),
@@ -175,7 +186,7 @@ class _CartScreenState extends State<CartScreen> {
 
               // Final amount
               _buildSummaryRow(
-                'Final amount',
+                'Tổng cộng',
                 FormatPrice.formatPrice(finalAmount),
                 isBold: true,
               ),
@@ -205,8 +216,12 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   child: Text(
                     selectedItems.isNotEmpty
-                        ? 'Check out (${selectedItems.length} items)'
-                        : 'Select items to checkout',
+                        ?
+                        //'Check out (${selectedItems.length} items)'
+                        'Thanh toán (${selectedItems.length} sản phẩm)'
+                        :
+                        //'Select items to checkout',
+                        'Chọn sản phẩm để thanh toán',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -268,7 +283,8 @@ class _CartScreenState extends State<CartScreen> {
               backgroundColor: AppColors.primary,
               automaticallyImplyLeading: false,
               title: Text(
-                'Shopping Cart (${state.cart.totalItems})',
+                //'Shopping Cart (${state.cart.totalItems})',
+                'Giỏ hàng (${state.cart.totalItems})',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -359,7 +375,8 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   SizedBox(width: 8),
                   Text(
-                    'All',
+                    //'All',
+                    'Tất cả',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -399,7 +416,8 @@ class _CartScreenState extends State<CartScreen> {
                           ],
                         ),
                         Text(
-                          'Save ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
+                          //'Save ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
+                          'Tiết kiệm ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
                           style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                       ],
@@ -421,7 +439,8 @@ class _CartScreenState extends State<CartScreen> {
                       }
                     },
                     child: Text(
-                      'Check out (${state.cart.items.where((item) => item.isSelected).length})', // ← Truyền cartItems
+                      //'Check out (${state.cart.items.where((item) => item.isSelected).length})', // ← Truyền cartItems
+                      'Thanh toán (${cartItems.where((item) => item.isSelected).length})', // ← Truyền cartItems
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -462,7 +481,8 @@ class _CartScreenState extends State<CartScreen> {
                       disabledForegroundColor: Colors.white70,
                     ),
                     child: Text(
-                      'Add to Wish List',
+                      //'Add to Wish List',
+                      'Thêm vào danh sách yêu thích',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -502,7 +522,8 @@ class _CartScreenState extends State<CartScreen> {
                       disabledForegroundColor: Colors.white70,
                     ),
                     child: Text(
-                      'Remove',
+                      //'Remove',
+                      'Xóa',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -537,7 +558,8 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Your cart is empty',
+                      //'Your cart is empty',
+                      'Giỏ hàng của bạn trống',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -546,7 +568,8 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Looks like you haven\'t added anything yet.',
+                      //'Looks like you haven\'t added anything yet.',
+                      'Có vẻ như bạn chưa thêm gì vào giỏ hàng.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -752,7 +775,8 @@ class _CartScreenState extends State<CartScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'In stock: ${items.inStock}',
+                          //'In stock: ${items.inStock}',
+                          'Còn hàng: ${items.inStock}',
                           style: TextStyle(
                             color: AppColors.black70,
                             fontSize: 14,
@@ -861,7 +885,10 @@ class _CartScreenState extends State<CartScreen> {
                   context.read<CartBloc>().add(RemoveCartItem(items.id));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Item removed from cart'),
+                      content: Text(
+                        //'Item removed from cart'
+                        'Sản phẩm đã được xóa khỏi giỏ hàng',
+                      ),
                       duration: Duration(seconds: 2),
                       backgroundColor: AppColors.primaryDark,
                     ),
@@ -887,7 +914,8 @@ class _CartScreenState extends State<CartScreen> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'You Might Also Like',
+              //'You Might Also Like',
+              'Bạn cũng có thể thích',
               style: TextStyle(
                 color: AppColors.black60,
                 fontSize: 16,
@@ -1074,7 +1102,8 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ),
                         Text(
-                          '${book.sold} sold',
+                          //'${book.sold} sold',
+                          '${book.sold} đã bán',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.black70,

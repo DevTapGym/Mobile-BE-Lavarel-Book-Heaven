@@ -109,7 +109,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'No shipping address found',
+                    //'No shipping address found',
+                    'Chưa có địa chỉ giao hàng',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -119,7 +120,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Please add a shipping address in your profile to continue.',
+                    //'Please add a shipping address in your profile to continue.',
+                    'Vui lòng thêm địa chỉ giao hàng trong hồ sơ của bạn để tiếp tục.',
                     style: TextStyle(fontSize: 15, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
@@ -143,7 +145,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                       color: Colors.white,
                     ),
                     label: const Text(
-                      'Add Address',
+                      //'Add Address',
+                      'Thêm địa chỉ',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -174,7 +177,12 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
             );
           }
         } else if (state is AddressError) {
-          return Center(child: Text('Failed to load addresses'));
+          return Center(
+            child: Text(
+              //'Failed to load addresses'
+              'Tải địa chỉ thất bại',
+            ),
+          );
         } else {
           return SizedBox.shrink();
         }
@@ -396,7 +404,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
       return Padding(
         padding: const EdgeInsets.all(20.0),
         child: Text(
-          'No products for checkout.',
+          //'No products for checkout.',
+          'Không có sản phẩm để thanh toán.',
           style: TextStyle(fontSize: 16, color: AppColors.black70),
         ),
       );
@@ -564,7 +573,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
               Icon(Icons.payment, color: AppColors.black60, size: 30),
               SizedBox(width: 8.0),
               Text(
-                'Payment Method',
+                //'Payment Method',
+                'Phương Thức Thanh Toán',
                 style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
               ),
             ],
@@ -601,7 +611,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                       Icon(Icons.error, color: Colors.red, size: 40),
                       SizedBox(height: 8),
                       Text(
-                        'Failed to load payment methods',
+                        //'Failed to load payment methods',
+                        'Tải phương thức thanh toán thất bại',
                         style: TextStyle(color: Colors.red),
                       ),
                       SizedBox(height: 8),
@@ -634,7 +645,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                   children: [
                     SizedBox(width: 4.0),
                     Text(
-                      'View All Options',
+                      //'View All Options',
+                      'Xem Tất Cả Tùy Chọn',
                       style: TextStyle(
                         fontSize: 16.0,
                         fontWeight: FontWeight.w900,
@@ -769,7 +781,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
               Icon(Icons.note_alt_outlined, color: AppColors.black60, size: 30),
               SizedBox(width: 8.0),
               Text(
-                'Order Note',
+                //'Order Note',
+                'Ghi Chú Đơn Hàng',
                 style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
               ),
             ],
@@ -800,7 +813,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                 height: 1.5,
               ),
               decoration: InputDecoration(
-                hintText: 'Enter your note or special request to the shop...',
+                //hintText: 'Enter your note or special request to the shop...',
+                hintText: 'Nhập ghi chú hoặc yêu cầu đặc biệt cho cửa hàng...',
                 hintStyle: TextStyle(
                   color: Colors.grey.shade400,
                   fontSize: 14,
@@ -860,15 +874,21 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryRow('Subtotal', FormatPrice.formatPrice(subtotal)),
           _buildSummaryRow(
-            'Shipping Fee',
+            //'Subtotal',
+            'Tạm tính',
+            FormatPrice.formatPrice(subtotal),
+          ),
+          _buildSummaryRow(
+            //'Shipping Fee',
+            'Phí Vận Chuyển',
             FormatPrice.formatPrice(shippingFee),
           ),
           Padding(
             padding: EdgeInsets.only(left: 12),
             child: Text(
-              'Discounts:',
+              //'Discounts:',
+              'Giảm giá:',
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.black70,
@@ -880,32 +900,37 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
           Padding(
             padding: EdgeInsets.only(left: 12),
             child: _buildSummaryRow(
-              '- Shipping Voucher',
+              //'- Shipping Voucher',
+              '- Voucher Vận Chuyển',
               '-${FormatPrice.formatPrice(0.0)}',
             ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 12),
             child: _buildSummaryRow(
-              '- Member Voucher',
+              //'- Member Voucher',
+              '- Voucher Thành Viên',
               '-${FormatPrice.formatPrice(0.0)}',
             ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 12),
             child: _buildSummaryRow(
-              '- Product Voucher',
+              //'- Product Voucher',
+              '- Voucher Sản Phẩm',
               '-${FormatPrice.formatPrice(discount)}',
             ),
           ),
           Divider(color: Colors.grey, height: 32.0),
           _buildSummaryRow(
-            'Total Discounts',
+            //'Total Discounts',
+            'Tổng Giảm Giá',
             '-${FormatPrice.formatPrice(discount)}',
             isBold: true,
           ),
           _buildSummaryRow(
-            'Total',
+            //'Total',
+            'Tổng Cộng',
             FormatPrice.formatPrice(total),
             isBold: true,
           ),
@@ -958,7 +983,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
           Row(
             children: [
               Text(
-                'Total',
+                //'Total',
+                'Tổng Cộng',
                 style: TextStyle(
                   fontSize: 22.0,
                   fontWeight: FontWeight.w900,
@@ -1062,7 +1088,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                 ),
               ),
               child: Text(
-                'Place Order',
+                //'Place Order',
+                'Đặt Hàng',
                 style: TextStyle(
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
@@ -1125,7 +1152,8 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Order failed: ${state.message}',
+                      //'Order failed: ${state.message}',
+                      'Đặt hàng thất bại: ${state.message}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1147,7 +1175,10 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppbarCustomWidget(title: 'Order Summary'),
+        appBar: AppbarCustomWidget(
+          //title: 'Order Summary'
+          title: 'Tóm Tắt Đơn Hàng',
+        ),
         body: Container(
           color: AppColors.background,
           child: SingleChildScrollView(

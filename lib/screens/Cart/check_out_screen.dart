@@ -100,7 +100,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'No shipping address found',
+                    //'No shipping address found',
+                    'Chưa tìm thấy địa chỉ giao hàng',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -110,7 +111,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Please add a shipping address in your profile to continue.',
+                    //'Please add a shipping address in your profile to continue.',
+                    'Vui lòng thêm địa chỉ giao hàng trong hồ sơ để tiếp tục.',
                     style: TextStyle(fontSize: 15, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
@@ -134,7 +136,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       color: Colors.white,
                     ),
                     label: const Text(
-                      'Add Address',
+                      //'Add Address',
+                      'Thêm địa chỉ',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -392,7 +395,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             return Padding(
               padding: const EdgeInsets.all(20.0),
               child: Text(
-                'No products selected for checkout. Please select items in your cart.',
+                //'No products selected for checkout. Please select items in your cart.',
+                'Chưa có sản phẩm nào được chọn để thanh toán. Vui lòng chọn sản phẩm trong giỏ hàng của bạn.',
                 style: TextStyle(fontSize: 16, color: AppColors.black70),
               ),
             );
@@ -434,7 +438,12 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             );
           }
         } else if (state is CartError) {
-          return Center(child: Text('Failed to load cart items'));
+          return Center(
+            child: Text(
+              //'Failed to load cart items'
+              'Tải mục giỏ hàng thất bại',
+            ),
+          );
         } else {
           return SizedBox.shrink();
         }
@@ -466,7 +475,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               Icon(Icons.discount_rounded, color: AppColors.black60, size: 30),
               SizedBox(width: 8.0),
               Text(
-                'Discount:',
+                //'Discount:',
+                'Giảm giá:',
                 style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
               ),
               Spacer(),
@@ -666,7 +676,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               Icon(Icons.payment, color: AppColors.black60, size: 30),
               SizedBox(width: 8.0),
               Text(
-                'Payment Method',
+                //'Payment Method',
+                'Phương thức thanh toán',
                 style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
               ),
             ],
@@ -703,7 +714,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       Icon(Icons.error, color: Colors.red, size: 40),
                       SizedBox(height: 8),
                       Text(
-                        'Failed to load payment methods',
+                        //'Failed to load payment methods',
+                        'Tải phương thức thanh toán thất bại',
                         style: TextStyle(color: Colors.red),
                       ),
                       SizedBox(height: 8),
@@ -736,7 +748,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   children: [
                     SizedBox(width: 4.0),
                     Text(
-                      'View All Options',
+                      //'View All Options',
+                      'Xem tất cả tùy chọn',
                       style: TextStyle(
                         fontSize: 16.0,
                         fontWeight: FontWeight.w900,
@@ -1025,7 +1038,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               Icon(Icons.note_alt_outlined, color: AppColors.black60, size: 30),
               SizedBox(width: 8.0),
               Text(
-                'Order Note',
+                //'Order Note',
+                'Ghi chú đơn hàng',
                 style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
               ),
             ],
@@ -1056,7 +1070,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 height: 1.5,
               ),
               decoration: InputDecoration(
-                hintText: 'Enter your note or special request to the shop...',
+                //hintText: 'Enter your note or special request to the shop...',
+                hintText: 'Nhập ghi chú hoặc yêu cầu cho cửa hàng...',
                 hintStyle: TextStyle(
                   color: Colors.grey.shade400,
                   fontSize: 14,
@@ -1156,17 +1171,20 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildSummaryRow(
-                        'Subtotal',
+                        //'Subtotal',
+                        'Tạm tính',
                         FormatPrice.formatPrice(subtotal),
                       ),
                       _buildSummaryRow(
-                        'Shipping Fee',
+                        //'Shipping Fee',
+                        'Phí vận chuyển',
                         FormatPrice.formatPrice(isFreeShip ? 0.0 : 30000.0),
                       ),
                       Padding(
                         padding: EdgeInsets.only(left: 12),
                         child: Text(
-                          'Discounts:',
+                          //'Discounts:',
+                          'Giảm giá:',
                           style: TextStyle(
                             fontSize: 16,
                             color: AppColors.black70,
@@ -1179,7 +1197,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                         Padding(
                           padding: EdgeInsets.only(left: 12),
                           child: _buildSummaryRow(
-                            '- Shipping Voucher',
+                            //'- Shipping Voucher',
+                            '- Giảm phí vận chuyển',
                             '-${FormatPrice.formatPrice(30000.0)}',
                           ),
                         )
@@ -1187,32 +1206,37 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                         Padding(
                           padding: EdgeInsets.only(left: 12),
                           child: _buildSummaryRow(
-                            '- Shipping Voucher',
+                            //'- Shipping Voucher',
+                            '- Giảm phí vận chuyển',
                             '-${FormatPrice.formatPrice(0.0)}',
                           ),
                         ),
                       Padding(
                         padding: EdgeInsets.only(left: 12),
                         child: _buildSummaryRow(
-                          '- Member Voucher',
+                          //'- Member Voucher',
+                          '- Giảm giá đơn hàng',
                           '-${FormatPrice.formatPrice(isFreeShip ? 0.0 : promotionDiscount)}',
                         ),
                       ),
                       Padding(
                         padding: EdgeInsets.only(left: 12),
                         child: _buildSummaryRow(
-                          '- Product Voucher',
+                          //'- Product Voucher',
+                          '- Giảm giá sản phẩm',
                           '-${FormatPrice.formatPrice(discount)}',
                         ),
                       ),
                       Divider(color: Colors.grey, height: 32.0),
                       _buildSummaryRow(
-                        'Total Discounts',
+                        //'Total Discounts',
+                        'Tổng giảm giá',
                         '-${FormatPrice.formatPrice(discount + promotionDiscount)}',
                         isBold: true,
                       ),
                       _buildSummaryRow(
-                        'Total',
+                        //'Total',
+                        'Tổng cộng',
                         FormatPrice.formatPrice(total),
                         isBold: true,
                       ),
@@ -1223,7 +1247,12 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             );
           }
         } else if (state is CartError) {
-          return Center(child: Text('Failed to load cart items'));
+          return Center(
+            child: Text(
+              //'Failed to load cart items'
+              'Tải mục giỏ hàng thất bại',
+            ),
+          );
         } else {
           return SizedBox.shrink();
         }
@@ -1316,7 +1345,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       Row(
                         children: [
                           Text(
-                            'Total',
+                            //'Total',
+                            'Tổng cộng:',
                             style: TextStyle(
                               fontSize: 22.0,
                               fontWeight: FontWeight.w900,
@@ -1325,7 +1355,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                           ),
                           SizedBox(width: 4.0),
                           Text(
-                            '($totalQuantity items)',
+                            //'($totalQuantity items)',
+                            '($totalQuantity sản phẩm)',
                             style: TextStyle(
                               fontSize: 14.0,
                               fontWeight: FontWeight.w900,
@@ -1345,7 +1376,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                                 ),
                               ),
                               Text(
-                                'Save ${FormatPrice.formatPrice(totalSavings)}',
+                                //'Save ${FormatPrice.formatPrice(totalSavings)}',
+                                'Tiết kiệm ${FormatPrice.formatPrice(totalSavings)}',
                                 style: TextStyle(
                                   letterSpacing: -1,
                                   fontSize: 14.0,
@@ -1415,7 +1447,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                             ),
                           ),
                           child: Text(
-                            'Place Order',
+                            //'Place Order',
+                            'Đặt hàng',
                             style: TextStyle(
                               fontSize: 18.0,
                               fontWeight: FontWeight.bold,
@@ -1433,7 +1466,12 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
         } else if (state is CartError) {
           return SizedBox(
             height: 70,
-            child: Center(child: Text('Failed to load cart items')),
+            child: Center(
+              child: Text(
+                //'Failed to load cart items'
+                'Tải mục giỏ hàng thất bại',
+              ),
+            ),
           );
         } else {
           return SizedBox.shrink();
@@ -1490,7 +1528,8 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Order failed: ${state.message}',
+                      //'Order failed: ${state.message}',
+                      'Đặt hàng thất bại: ${state.message}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1512,7 +1551,10 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppbarCustomWidget(title: 'Order Summary'),
+        appBar: AppbarCustomWidget(
+          //title: 'Order Summary'
+          title: 'Tóm tắt đơn hàng',
+        ),
         body: Container(
           color: AppColors.background,
           child: SingleChildScrollView(

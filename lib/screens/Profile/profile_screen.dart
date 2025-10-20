@@ -229,7 +229,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         Text(
                                           user.name.isNotEmpty
                                               ? user.name
-                                              : 'No Name',
+                                              : //'No Name',
+                                              'Chưa cập nhật tên',
                                           style: TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
@@ -280,7 +281,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         size: 28,
                                       ),
                                       title: Text(
-                                        'Edit Profile',
+                                        //'Edit Profile',
+                                        'Cập nhật thông tin',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black54,
@@ -301,7 +303,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         size: 28,
                                       ),
                                       title: Text(
-                                        'Shipping Address',
+                                        //'Shipping Address',
+                                        'Địa chỉ giao hàng',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black54,
@@ -322,7 +325,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         size: 28,
                                       ),
                                       title: Text(
-                                        'Rewards',
+                                        //'Rewards',
+                                        'Phần thưởng',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black54,
@@ -340,7 +344,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         size: 28,
                                       ),
                                       title: Text(
-                                        'Change Password',
+                                        //'Change Password',
+                                        'Đổi mật khẩu',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black54,
@@ -436,7 +441,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 size: 28,
                               ),
                               title: Text(
-                                'Notifications',
+                                //'Notifications',
+                                'Thông báo',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black54,
@@ -468,7 +474,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 size: 28,
                               ),
                               title: Text(
-                                'Language',
+                                //'Language',
+                                'Ngôn ngữ',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black54,
@@ -526,7 +533,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             size: 28,
                           ),
                           title: Text(
-                            'Terms of Service',
+                            //'Terms of Service',
+                            'Điều khoản dịch vụ',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.black54,
@@ -542,7 +550,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             size: 28,
                           ),
                           title: Text(
-                            'Return Policy',
+                            //'Return Policy',
+                            'Chính sách đổi trả',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.black54,
@@ -558,7 +567,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             size: 28,
                           ),
                           title: Text(
-                            'Help & Feedback',
+                            //'Help & Feedback',
+                            'Trợ giúp & Phản hồi',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.black54,
@@ -587,7 +597,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             child: Text(
-                              'Logout',
+                              //'Logout',
+                              'Đăng xuất',
                               style: TextStyle(
                                 fontSize: 18,
                                 color: Colors.white,

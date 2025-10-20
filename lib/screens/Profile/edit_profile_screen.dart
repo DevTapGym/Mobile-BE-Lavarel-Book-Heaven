@@ -77,7 +77,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Gender',
+            //'Gender',
+            'Giới tính',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8.0),
@@ -92,7 +93,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: DropdownButton<String>(
                 value: selectedGender,
                 hint: Text(
-                  'Select Gender',
+                  //'Select Gender',
+                  'Chọn giới tính',
                   style: TextStyle(color: Colors.black54, fontSize: 17),
                 ),
                 icon: Icon(Icons.arrow_drop_down, color: Colors.black54),
@@ -398,17 +400,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               children: [
                                 SizedBox(height: 36.0),
                                 TextfieldCustomWidget(
-                                  label: 'Name',
+                                  //label: 'Name',
+                                  label: 'Tên',
                                   controller: nameController,
                                 ),
                                 SizedBox(height: 8.0),
                                 TextfieldCustomWidget(
-                                  label: 'Phone',
+                                  //label: 'Phone',
+                                  label: 'Số điện thoại',
                                   controller: phoneController,
                                 ),
                                 SizedBox(height: 8.0),
                                 DatePickerCustomWidget(
-                                  label: 'Day of Birth',
+                                  //label: 'Day of Birth',
+                                  label: 'Ngày sinh',
                                   controller: dateOfBirthController,
                                   onDateChanged: (serverFormat) {
                                     dateOfBirthForServer = serverFormat;
@@ -510,7 +515,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         elevation: 6,
                       ),
                       child: Text(
-                        'Update',
+                        //'Update',
+                        'Cập nhật',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,

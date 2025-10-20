@@ -16,34 +16,6 @@ class ShippingAddressScreen extends StatefulWidget {
 }
 
 class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
-  // Fake data array
-  List<Map<String, dynamic>> addresses = [
-    {
-      'title': 'Home',
-      'name': 'Huỳnh Công Tiến',
-      'phone': '0966098786',
-      'address':
-          '72/52 Đường Dương Đình Hội, Phường Tậy Thạnh, Quận Tân Phú, TP. Hồ Chí Minh',
-      'isDefault': true,
-    },
-    {
-      'title': 'School',
-      'name': 'Huỳnh Văn Tuấn',
-      'phone': '096752124',
-      'address':
-          '72/52 Đường Dương Đình Hội, Phường Tậy Thạnh, Quận Tân Phú, TP. Hồ Chí Minh',
-      'isDefault': false,
-    },
-    {
-      'title': 'Office',
-      'name': 'Huỳnh Công Tiến',
-      'phone': '096947174',
-      'address':
-          '72/52 Đường Dương Đình Hội, Phường Tậy Thạnh, Quận Tân Phú, TP. Hồ Chí Minh',
-      'isDefault': false,
-    },
-  ];
-
   // Controllers for edit dialog
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -102,7 +74,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Edit Address',
+                        //'Edit Address',
+                        'Chỉnh sửa địa chỉ',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -141,7 +114,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                                 child: DropdownButtonFormField<int>(
                                   value: selectedTagId,
                                   decoration: InputDecoration(
-                                    labelText: 'Address Tag',
+                                    //labelText: 'Address Tag',
+                                    labelText: 'Tên địa chỉ',
                                     prefixIcon: Icon(
                                       Icons.local_offer,
                                       color: AppColors.primaryDark,
@@ -188,18 +162,22 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
 
                           _buildEditTextField(
                             controller: _nameController,
-                            label: 'Recipient Name',
+                            //label: 'Recipient Name',
+                            label: 'Tên người nhận',
                             icon: Icons.person,
-                            hint: 'Enter full name',
+                            //hint: 'Enter full name',
+                            hint: 'Nhập tên đầy đủ',
                           ),
 
                           SizedBox(height: 16),
 
                           _buildEditTextField(
                             controller: _phoneController,
-                            label: 'Phone Number',
+                            //label: 'Phone Number',
+                            label: 'Số điện thoại',
                             icon: Icons.phone,
-                            hint: 'Enter phone number',
+                            //hint: 'Enter phone number',
+                            hint: 'Nhập số điện thoại',
                             keyboardType: TextInputType.phone,
                           ),
 
@@ -207,9 +185,11 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
 
                           _buildEditTextField(
                             controller: _addressController,
-                            label: 'Full Address',
+                            //label: 'Full Address',
+                            label: 'Địa chỉ đầy đủ',
                             icon: Icons.location_on,
-                            hint: 'Enter complete address',
+                            //hint: 'Enter complete address',
+                            hint: 'Nhập địa chỉ đầy đủ',
                             maxLines: 3,
                           ),
 
@@ -240,7 +220,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                                 SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    'Set as Default Address',
+                                    //'Set as Default Address',
+                                    'Đặt làm địa chỉ mặc định',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -288,7 +269,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                             ),
                           ),
                           child: Text(
-                            'Cancel',
+                            //'Cancel',
+                            'Hủy',
                             style: TextStyle(
                               color: AppColors.primaryDark,
                               fontSize: 16,
@@ -315,7 +297,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                             elevation: 2,
                           ),
                           child: Text(
-                            'Save Changes',
+                            //'Save Changes',
+                            'Lưu thay đổi',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -372,15 +355,18 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
   void _saveEditedAddress(int addressId, bool isDefault, int tagId) {
     // Validation
     if (_nameController.text.trim().isEmpty) {
-      _showErrorSnackBar('Please enter recipient name');
+      //_showErrorSnackBar('Please enter recipient name');
+      _showErrorSnackBar('Vui lòng nhập tên người nhận');
       return;
     }
     if (_phoneController.text.trim().isEmpty) {
-      _showErrorSnackBar('Please enter phone number');
+      //_showErrorSnackBar('Please enter phone number');
+      _showErrorSnackBar('Vui lòng nhập số điện thoại');
       return;
     }
     if (_addressController.text.trim().isEmpty) {
-      _showErrorSnackBar('Please enter address');
+      //_showErrorSnackBar('Please enter address');
+      _showErrorSnackBar('Vui lòng nhập địa chỉ');
       return;
     }
 
@@ -405,7 +391,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
           children: [
             Icon(Icons.check_circle, color: Colors.white),
             SizedBox(width: 8),
-            Text('Address updated successfully'),
+            //Text('Address updated successfully'),
+            Text('Cập nhật địa chỉ thành công'),
           ],
         ),
         backgroundColor: Colors.green,
@@ -447,7 +434,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
             ),
             backgroundColor: Colors.white,
             content: Text(
-              'Are you sure you want to delete this address?',
+              //'Are you sure you want to delete this address?',
+              'Bạn có chắc chắn muốn xóa địa chỉ này không?',
               style: TextStyle(fontSize: 16, color: Colors.black87),
             ),
             actions: [
@@ -465,7 +453,11 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                   );
                   Navigator.pop(context);
                 },
-                child: Text('Delete', style: TextStyle(color: Colors.red)),
+                child: Text(
+                  //'Delete',
+                  'Xóa',
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
             ],
           ),
@@ -475,7 +467,10 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppbarCustomWidget(title: 'Shipping Address'),
+      appBar: AppbarCustomWidget(
+        //title: 'Shipping Address'
+        title: 'Địa chỉ giao hàng',
+      ),
       body: Container(
         color: AppColors.background,
         child: BlocBuilder<AddressBloc, AddressState>(
@@ -485,7 +480,12 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
             } else if (state is AddressLoaded) {
               final addresses = state.addresses;
               if (addresses.isEmpty) {
-                return Center(child: Text('Your address list is empty.'));
+                return Center(
+                  child: Text(
+                    //'Your address list is empty.'
+                    'Danh sách địa chỉ của bạn đang trống.',
+                  ),
+                );
               } else {
                 return Padding(
                   padding: EdgeInsets.all(8.0),
@@ -524,7 +524,12 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
             } else if (state is AddressError) {
               return Center(child: Text(state.message));
             } else {
-              return Center(child: Text('Press the button to load addresses.'));
+              return Center(
+                child: Text(
+                  //'Press the button to load addresses.'
+                  'Nhấn nút để tải địa chỉ.',
+                ),
+              );
             }
           },
         ),
@@ -554,7 +559,8 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                 backgroundColor: AppColors.primaryDark,
               ),
               child: Text(
-                'Add Address',
+                //'Add Address',
+                'Thêm địa chỉ',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,

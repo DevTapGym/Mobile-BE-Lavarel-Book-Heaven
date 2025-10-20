@@ -108,7 +108,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                         ),
                         const SizedBox(width: 8),
                         const Text(
-                          'Filter Orders by Date Range',
+                          //'Filter Orders by Date Range',
+                          'Chọn khoảng ngày',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -130,7 +131,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                                 initialDate: tempStartDate ?? DateTime.now(),
                                 firstDate: DateTime(2020),
                                 lastDate: tempEndDate ?? DateTime.now(),
-                                helpText: 'Select Start Date',
+                                //helpText: 'Select Start Date',
+                                helpText: 'Chọn ngày bắt đầu',
                                 builder: (context, child) {
                                   return Theme(
                                     data: Theme.of(context).copyWith(
@@ -167,7 +169,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                             label: Text(
                               tempStartDate != null
                                   ? '${tempStartDate!.day}/${tempStartDate!.month}/${tempStartDate!.year}'
-                                  : 'Start Date',
+                                  : //'Start Date',
+                                  'Ngày bắt đầu',
                               style: TextStyle(
                                 color:
                                     tempStartDate != null
@@ -205,7 +208,8 @@ class _OrdersScreenState extends State<OrdersScreen>
 
                         // To text
                         Text(
-                          'to',
+                          //'to',
+                          'đến',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontWeight: FontWeight.w500,
@@ -227,7 +231,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                                             tempEndDate ?? tempStartDate!,
                                         firstDate: tempStartDate!,
                                         lastDate: DateTime.now(),
-                                        helpText: 'Select End Date',
+                                        helpText: //'Select End Date',
+                                            'Chọn ngày kết thúc',
                                         builder: (context, child) {
                                           return Theme(
                                             data: Theme.of(context).copyWith(
@@ -260,7 +265,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                             label: Text(
                               tempEndDate != null
                                   ? '${tempEndDate!.day}/${tempEndDate!.month}/${tempEndDate!.year}'
-                                  : 'End Date',
+                                  : //'End Date',
+                                  'Ngày kết thúc',
                               style: TextStyle(
                                 color:
                                     tempEndDate != null
@@ -321,7 +327,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Selected Date Range:',
+                                  //'Selected Date Range:',
+                                  'Khoảng ngày đã chọn:',
                                   style: TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
@@ -342,7 +349,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                                   ),
                                 ),
                                 Text(
-                                  '  to  ',
+                                  //'  to  ',
+                                  '  đến  ',
                                   style: TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w400,
@@ -374,7 +382,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                             Navigator.pop(context);
                           },
                           child: Text(
-                            'Cancel',
+                            //'Cancel',
+                            'Hủy',
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontWeight: FontWeight.w500,
@@ -412,7 +421,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                             ),
                           ),
                           child: const Text(
-                            'Apply Filter',
+                            //'Apply Filter',
+                            'Áp dụng',
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -1757,7 +1767,8 @@ class _OrdersScreenState extends State<OrdersScreen>
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: Text(
-          'My Orders',
+          //'My Orders',
+          'Đơn hàng của tôi',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -1788,7 +1799,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                 size: 20,
               ),
             ),
-            tooltip: 'Filter by date range',
+            //tooltip: 'Filter by date range',
+            tooltip: 'Lọc theo khoảng ngày',
           ),
           const SizedBox(width: 8),
         ],
@@ -1827,7 +1839,8 @@ class _OrdersScreenState extends State<OrdersScreen>
             if (state is OrderError) {
               return Center(
                 child: Text(
-                  'Error loading orders: ${state.message}',
+                  //'Error loading orders: ${state.message}',
+                  'Lỗi khi tải đơn hàng: ${state.message}',
                   style: const TextStyle(color: Colors.red),
                 ),
               );
@@ -1855,47 +1868,58 @@ class _OrdersScreenState extends State<OrdersScreen>
                       isScrollable: true,
                       tabs: [
                         const Tab(
-                          child: Text('All', style: TextStyle(fontSize: 16)),
-                        ),
-                        const Tab(
                           child: Text(
-                            'Wait confirm',
+                            //'All',
+                            'Tất cả',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
                         const Tab(
                           child: Text(
-                            'Processing',
+                            //'Wait confirm',
+                            'Chờ xác nhận',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
                         const Tab(
                           child: Text(
-                            'Shipping',
+                            //'Processing',
+                            'Đang xử lý',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
                         const Tab(
                           child: Text(
-                            'Payment Completed',
+                            //'Shipping',
+                            'Đang giao',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
                         const Tab(
                           child: Text(
-                            'Canceled',
+                            //'Payment Completed',
+                            'Đã thanh toán',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
                         const Tab(
                           child: Text(
-                            'Returned',
+                            //'Canceled',
+                            'Đã hủy',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
                         const Tab(
                           child: Text(
-                            'Completed',
+                            //'Returned',
+                            'Đã trả hàng',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        const Tab(
+                          child: Text(
+                            //'Completed',
+                            'Hoàn thành',
                             style: TextStyle(fontSize: 16),
                           ),
                         ),
@@ -1961,7 +1985,8 @@ class _OrdersScreenState extends State<OrdersScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                'No Orders Yet',
+                //'No Orders Yet',
+                'Chưa có đơn hàng',
                 style: TextStyle(
                   fontSize: 24,
                   color: Colors.grey[800],
@@ -1970,7 +1995,8 @@ class _OrdersScreenState extends State<OrdersScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'You haven\'t placed any orders yet.\nStart shopping to see your orders here!',
+                //'You haven\'t placed any orders yet.\nStart shopping to see your orders here!',
+                'Bạn chưa đặt đơn hàng nào.\nBắt đầu mua sắm để xem đơn hàng của bạn ở đây!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -1989,7 +2015,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                   size: 20,
                 ),
                 label: Text(
-                  'Shop Now!',
+                  //'Shop Now!',
+                  'Mua sắm ngay!',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -2099,8 +2126,10 @@ class _OrdersScreenState extends State<OrdersScreen>
                       const SizedBox(width: 4),
                       Text(
                         isExpanded
-                            ? 'Show Less'
-                            : 'Show More (${order.items.length - 1} more items)',
+                            ? //'Show Less'
+                            'Thu gọn'
+                            : //'Show More (${order.items.length - 1} more items)',
+                            'Xem thêm (${order.items.length - 1} sản phẩm)',
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontSize: 14,
@@ -2119,7 +2148,8 @@ class _OrdersScreenState extends State<OrdersScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Total Amount',
+                  //'Total Amount',
+                  'Tổng tiền',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
@@ -2157,7 +2187,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                       ),
                     ),
                     child: const Text(
-                      'View Details',
+                      //'View Details',
+                      'Xem chi tiết',
                       style: TextStyle(
                         color: AppColors.primary,
                         fontSize: 16,
@@ -2200,7 +2231,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                         ),
                       ),
                       child: const Text(
-                        'Re-order',
+                        //'Re-order',
+                        'Đặt hàng lại',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -2219,7 +2251,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                         ),
                       ),
                       child: const Text(
-                        'Cancel Order',
+                        //'Cancel Order',
+                        'Hủy đơn hàng',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -2240,7 +2273,8 @@ class _OrdersScreenState extends State<OrdersScreen>
                         ),
                       ),
                       child: const Text(
-                        'Return Order',
+                        //'Return Order',
+                        'Trả hàng',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
