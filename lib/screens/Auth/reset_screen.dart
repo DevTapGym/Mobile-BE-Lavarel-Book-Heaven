@@ -128,7 +128,8 @@ class _ResetScreenState extends State<ResetScreen> {
                             const SizedBox(height: 24),
                             // Title
                             Text(
-                              'Reset Password',
+                              //'Reset Password',
+                              'Đặt Lại Mật Khẩu',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
@@ -146,7 +147,8 @@ class _ResetScreenState extends State<ResetScreen> {
                             const SizedBox(height: 12),
                             // Subtitle
                             Text(
-                              'Enter OTP code sent to ${widget.email} and your new password',
+                              //'Enter OTP code sent to ${widget.email} and your new password',
+                              'Nhập mã OTP đã gửi đến ${widget.email} và mật khẩu mới của bạn',
                               style: TextStyle(
                                 color: AppColors.text,
                                 fontSize: 16,
@@ -266,7 +268,8 @@ class _ResetScreenState extends State<ResetScreen> {
                                   fontSize: 18,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter new password',
+                                  //hintText: 'Enter new password',
+                                  hintText: 'Nhập mật khẩu mới',
                                   hintStyle: const TextStyle(
                                     color: AppColors.text,
                                     fontSize: 16,
@@ -322,10 +325,12 @@ class _ResetScreenState extends State<ResetScreen> {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter new password';
+                                    //return 'Please enter new password';
+                                    return 'Vui lòng nhập mật khẩu mới';
                                   }
                                   if (value.length < 8) {
-                                    return 'Password must be at least 8 characters';
+                                    //return 'Password must be at least 8 characters';
+                                    return 'Mật khẩu phải có ít nhất 8 ký tự';
                                   }
                                   return null;
                                 },
@@ -352,7 +357,8 @@ class _ResetScreenState extends State<ResetScreen> {
                                   fontSize: 18,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: 'Confirm new password',
+                                  //hintText: 'Confirm new password',
+                                  hintText: 'Xác Nhận Mật Khẩu Mới',
                                   hintStyle: const TextStyle(
                                     color: AppColors.text,
                                     fontSize: 16,
@@ -395,10 +401,12 @@ class _ResetScreenState extends State<ResetScreen> {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please confirm your password';
+                                    //return 'Please confirm your password';
+                                    return 'Vui lòng xác nhận mật khẩu của bạn';
                                   }
                                   if (value != _passwordController.text) {
-                                    return 'Passwords do not match';
+                                    //return 'Passwords do not match';
+                                    return 'Mật khẩu không khớp';
                                   }
                                   return null;
                                 },
@@ -415,7 +423,8 @@ class _ResetScreenState extends State<ResetScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: const Text(
-                                          'Please enter a complete 6-digit OTP',
+                                          //'Please enter a complete 6-digit OTP',
+                                          'Vui lòng nhập mã OTP đầy đủ 6 chữ số',
                                           style: TextStyle(fontSize: 16),
                                         ),
                                         backgroundColor: Colors.red,
@@ -451,7 +460,8 @@ class _ResetScreenState extends State<ResetScreen> {
                                 elevation: 4,
                               ),
                               child: Text(
-                                'Reset Password',
+                                //'Reset Password',
+                                'Đặt Lại Mật Khẩu',
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,

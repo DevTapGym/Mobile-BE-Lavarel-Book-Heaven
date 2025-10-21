@@ -4,6 +4,7 @@ class Address {
   final String address;
   final String phoneNumber;
   final int isDefault;
+  final int tagId;
   final String tagName;
 
   Address({
@@ -12,6 +13,7 @@ class Address {
     required this.address,
     required this.phoneNumber,
     required this.isDefault,
+    required this.tagId,
     required this.tagName,
   });
 
@@ -22,7 +24,8 @@ class Address {
       address: json['address'],
       phoneNumber: json['phone_number'],
       isDefault: json['is_default'] ?? 1,
-      tagName: json['tag_name'],
+      tagId: json['tag_id'] ?? 1,
+      tagName: json['tag_name'] ?? '',
     );
   }
 }

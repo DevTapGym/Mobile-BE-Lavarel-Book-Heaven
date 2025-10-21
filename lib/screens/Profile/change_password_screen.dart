@@ -23,7 +23,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _hasUppercase = false;
   bool _hasNumber = false;
   bool _hasMinLength = false;
-  String _passwordStrengthText = 'Weak password';
+  String _passwordStrengthText = 'Mật khẩu yếu';
   Color _progressBarColor = Colors.grey;
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
@@ -42,19 +42,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       switch (conditionsMet) {
         case 0:
           _progressBarColor = Colors.grey;
-          _passwordStrengthText = 'Weak password';
+          _passwordStrengthText = 'Mật khẩu yếu';
           break;
         case 1:
           _progressBarColor = Colors.red;
-          _passwordStrengthText = 'Weak password';
+          _passwordStrengthText = 'Mật khẩu yếu';
           break;
         case 2:
           _progressBarColor = Colors.orange;
-          _passwordStrengthText = 'Medium password';
+          _passwordStrengthText = 'Mật khẩu trung bình';
           break;
         case 3:
           _progressBarColor = Colors.green;
-          _passwordStrengthText = 'Strong password';
+          _passwordStrengthText = 'Mật khẩu mạnh';
           break;
       }
 
@@ -94,7 +94,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         } else if (state is UserLoaded && state.message != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Password changed successfully!'),
+              //content: Text('Password changed successfully!'),
+              content: Text('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
@@ -108,7 +109,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             _hasUppercase = false;
             _hasNumber = false;
             _hasMinLength = false;
-            _passwordStrengthText = 'Weak password';
+            _passwordStrengthText = 'Mật khẩu yếu';
             _progressBarColor = Colors.grey;
           });
 
@@ -168,7 +169,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     SizedBox(height: 16.0),
                     Text(
-                      'Change Password',
+                      'Đổi Mật Khẩu',
                       style: TextStyle(
                         fontSize: 28.0,
                         shadows: [
@@ -184,13 +185,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     SizedBox(height: 8.0),
                     Text(
-                      'Update your password to keep your account secure',
+                      //'Update your password to keep your account secure',
+                      'Cập nhật mật khẩu của bạn để giữ an toàn cho tài khoản',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 13.0, color: Colors.black54),
                     ),
                     SizedBox(height: 32.0),
                     LabelTextField(
-                      label: 'Current Password',
+                      //label: 'Current Password',
+                      label: 'Mật khẩu hiện tại',
                       controller: _currentPasswordController,
                       obscureText: _obscureCurrentPassword,
                       suffixIcon: IconButton(
@@ -209,7 +212,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     SizedBox(height: 16.0),
                     LabelTextField(
-                      label: 'New Password',
+                      //label: 'New Password',
+                      label: 'Mật khẩu mới',
                       controller: _newPasswordController,
                       obscureText: _obscureNewPassword,
                       onChanged: _validatePassword,
@@ -229,7 +233,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     SizedBox(height: 16.0),
                     LabelTextField(
-                      label: 'Confirm New Password',
+                      //label: 'Confirm New Password',
+                      label: 'Xác nhận mật khẩu mới',
                       controller: _confirmPasswordController,
                       obscureText: true,
                       onChanged: _validatePassword,
@@ -293,7 +298,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           color: _hasUppercase ? Colors.green : Colors.grey,
                         ),
                         SizedBox(width: 8.0),
-                        Text('At least 1 uppercase'),
+                        //Text('At least 1 uppercase'),
+                        Text('Ít nhất 1 chữ cái in hoa'),
                       ],
                     ),
                     Row(
@@ -303,7 +309,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           color: _hasNumber ? Colors.green : Colors.grey,
                         ),
                         SizedBox(width: 8.0),
-                        Text('At least 1 number'),
+                        //Text('At least 1 number'),
+                        Text('Ít nhất 1 chữ số'),
                       ],
                     ),
                     Row(
@@ -313,7 +320,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           color: _hasMinLength ? Colors.green : Colors.grey,
                         ),
                         SizedBox(width: 8.0),
-                        Text('At least 8 characters'),
+                        //Text('At least 8 characters'),
+                        Text('Ít nhất 8 ký tự'),
                       ],
                     ),
                     SizedBox(height: 32.0),
@@ -328,7 +336,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           disabledBackgroundColor: Colors.grey,
                         ),
                         child: Text(
-                          'Change',
+                          //'Change',
+                          'Đổi Mật Khẩu',
                           style: TextStyle(
                             fontSize: 18.0,
                             color: Colors.white,

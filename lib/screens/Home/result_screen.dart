@@ -86,7 +86,8 @@ class _ResultScreenState extends State<ResultScreen> {
 
   String _getPageTitle() {
     if (widget.searchQuery?.isNotEmpty == true) {
-      return 'Search Results';
+      //return 'Search Results';
+      return 'Kết quả tìm kiếm';
     } else if (widget.category != null) {
       return widget.category!;
     } else if (widget.sectionTitle != null) {
@@ -94,18 +95,23 @@ class _ResultScreenState extends State<ResultScreen> {
     } else if (_selectedCategory != 'All') {
       return _selectedCategory;
     }
-    return 'Books';
+    //return 'Books';
+    return 'Sách';
   }
 
   String _getPageSubtitle() {
     if (widget.searchQuery?.isNotEmpty == true) {
-      return 'for "${widget.searchQuery}"';
+      //return 'for "${widget.searchQuery}"';
+      return 'Kết quả cho "${widget.searchQuery}"';
     } else if (widget.category != null) {
-      return 'books found';
+      //return 'books found';
+      return 'Sách được tìm thấy';
     } else if (_selectedCategory != 'All') {
-      return 'books in this category';
+      //return 'Books in this category';
+      return 'Sách trong danh mục này';
     }
-    return 'books available';
+    //return 'Books available';
+    return 'Sách có sẵn';
   }
 
   @override
@@ -283,7 +289,8 @@ class _ResultScreenState extends State<ResultScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search books, authors, categories...',
+                //hintText: 'Search books, authors, categories...',
+                hintText: 'Tìm kiếm sách, tác giả, danh mục...',
                 prefixIcon: const Icon(
                   Icons.search,
                   color: AppColors.primaryDark,
@@ -659,16 +666,6 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                     ],
                   ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.favorite_border,
-                      color: Colors.grey,
-                      size: 16,
-                    ),
-                    onPressed: () {},
-                    padding: const EdgeInsets.all(6),
-                    constraints: const BoxConstraints(),
-                  ),
                 ),
               ),
             ],
@@ -720,9 +717,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   Row(
                     children: [
                       Text(
-                        FormatPrice.formatPrice(
-                          book.price * (1 - book.saleOff / 100),
-                        ),
+                        FormatPrice.formatPrice(book.price),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -733,7 +728,9 @@ class _ResultScreenState extends State<ResultScreen> {
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: Text(
-                            FormatPrice.formatPrice(book.price),
+                            FormatPrice.formatPrice(
+                              book.price * (1 + book.saleOff / 100),
+                            ),
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[500],
@@ -869,13 +866,6 @@ class _ResultScreenState extends State<ResultScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.favorite_border,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {},
                     ),
                   ],
                 ),

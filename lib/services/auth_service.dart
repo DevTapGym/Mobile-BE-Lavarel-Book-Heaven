@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+// import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heaven_book_app/model/user.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
@@ -18,6 +20,102 @@ class AuthService {
   AuthService() {
     apiClient = ApiClient(_secureStorage, this);
   }
+
+  // Future<Map<String, dynamic>> loginWithGoogle() async {
+  //   try {
+  //     final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
+  //     final fb_auth.FirebaseAuth firebaseAuth = fb_auth.FirebaseAuth.instance;
+
+  //     // 1️⃣ Đăng nhập Google
+  //     final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+  //     if (googleUser == null) {
+  //       throw Exception('Người dùng đã hủy đăng nhập Google');
+  //     }
+
+  //     // 2️⃣ Lấy token từ Google
+  //     final GoogleSignInAuthentication googleAuth =
+  //         await googleUser.authentication;
+
+  //     // 3️⃣ Đăng nhập Firebase bằng credential
+  //     final credential = fb_auth.GoogleAuthProvider.credential(
+  //       accessToken: googleAuth.accessToken,
+  //       idToken: googleAuth.idToken,
+  //     );
+
+  //     final fb_auth.UserCredential userCredential = await firebaseAuth
+  //         .signInWithCredential(credential);
+  //     final user = userCredential.user;
+
+  //     if (user == null) {
+  //       throw Exception('Không thể đăng nhập Firebase.');
+  //     }
+
+  //     // 4️⃣ Lấy token xác thực Firebase gửi về BE (nếu BE kiểm tra)
+  //     final idToken = await user.getIdToken();
+
+  //     // 5️⃣ Gửi thông tin đến Backend
+  //     final response = await apiClient.publicDio.post(
+  //       '/auth/google',
+  //       data: {
+  //         "name": user.displayName,
+  //         "email": user.email,
+  //         "imageUrl": user.photoURL,
+  //         "firebase_token": idToken, // tùy backend có dùng hay không
+  //       },
+  //     );
+
+  //     if (response.statusCode == 200 && response.data['data'] != null) {
+  //       final data = response.data['data'];
+
+  //       // 6️⃣ Lưu Access Token
+  //       await _secureStorage.write(
+  //         key: 'access_token',
+  //         value: data['access_token'],
+  //       );
+
+  //       // 7️⃣ Lưu Refresh Token (nếu có)
+  //       final setCookieHeader = response.headers['set-cookie'];
+  //       if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
+  //         final refreshCookie = setCookieHeader
+  //             .map((str) => Cookie.fromSetCookieValue(str))
+  //             .firstWhere(
+  //               (c) => c.name == 'refresh_token',
+  //               orElse: () => Cookie('refresh_token', ''),
+  //             );
+
+  //         if (refreshCookie.value.isNotEmpty) {
+  //           await _secureStorage.write(
+  //             key: 'refresh_token',
+  //             value: refreshCookie.value,
+  //           );
+  //           debugPrint('✅ Refresh token đã lưu sau Google login');
+  //         }
+  //       }
+
+  //       final userData = data['account'] ?? {};
+  //       final isActiveValue = userData['is_active'] ?? 0;
+  //       await _secureStorage.write(
+  //         key: 'is_active',
+  //         value: isActiveValue.toString(),
+  //       );
+
+  //       final isActive = userData['is_active'] == 1;
+  //       debugPrint('✅ Google login thành công: ${user.email}');
+  //       return {
+  //         'token': data['access_token'],
+  //         'user': userData,
+  //         'isActive': isActive,
+  //       };
+  //     } else {
+  //       throw Exception(
+  //         response.data['message'] ?? 'Đăng nhập Google thất bại',
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint('❌ Lỗi loginWithGoogle: $e');
+  //     throw Exception('Đăng nhập Google thất bại: $e');
+  //   }
+  // }
 
   Future<User> uploadAvatar(File imageFile) async {
     try {
@@ -74,18 +172,31 @@ class AuthService {
       );
 
       if (response.statusCode == 200 && response.data['data'] != null) {
-        debugPrint('Cập nhật thông tin người dùng thành công');
+        debugPrint('✅ Cập nhật thông tin người dùng thành công');
         return true;
+      } else {
+        final message = response.data['message'] ?? 'Cập nhật thất bại';
+        final error = response.data['error'];
+        debugPrint('⚠️ Update user info failed: $message');
+        throw Exception(error != null ? '$message: $error' : message);
+      }
+    } on DioException catch (dioError) {
+      debugPrint('❌ DioException khi cập nhật thông tin người dùng:');
+
+      if (dioError.response != null) {
+        debugPrint('Status code: ${dioError.response?.statusCode}');
+        debugPrint('Data: ${dioError.response?.data}');
+        debugPrint('Headers: ${dioError.response?.headers}');
+      } else {
+        debugPrint('Message: ${dioError.message}');
       }
 
-      final message = response.data['message'] ?? 'Cập nhật thất bại';
-      final error = response.data['error'];
-      debugPrint('Update user info failed: $message');
-      throw Exception(error != null ? '$message: $error' : message);
+      // Có thể throw lại lỗi nếu cần cho Bloc/UI xử lý
+      throw Exception('Lỗi cập nhật thông tin: ${dioError.message}');
     } catch (e, stack) {
-      debugPrint('Update user info error: $e');
-      debugPrint('Stacktrace: $stack');
-      rethrow; // hoặc throw Exception('Chi tiết lỗi: $e');
+      debugPrint('❌ Lỗi không xác định khi cập nhật thông tin: $e');
+      debugPrint('❌ Stacktrace: $stack');
+      throw Exception('Đã xảy ra lỗi không xác định: $e');
     }
   }
 
@@ -125,7 +236,7 @@ class AuthService {
       final response = await apiClient.privateDio.get('/auth/me');
 
       if (response.statusCode == 200 && response.data['data'] != null) {
-        final userJson = response.data['data']['account'];
+        final userJson = response.data['data'];
         return User.fromJson(userJson);
       } else {
         throw Exception('Không thể lấy thông tin người dùng');

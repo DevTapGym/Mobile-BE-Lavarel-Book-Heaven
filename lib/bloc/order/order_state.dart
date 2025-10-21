@@ -20,6 +20,15 @@ class OrderLoaded extends OrderState {
   List<Object?> get props => [orders];
 }
 
+class OrderDetailLoaded extends OrderState {
+  final Order order;
+
+  OrderDetailLoaded({required this.order});
+
+  @override
+  List<Object?> get props => [order];
+}
+
 class OrderError extends OrderState {
   final String message;
 

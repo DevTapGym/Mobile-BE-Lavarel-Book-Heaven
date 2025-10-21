@@ -106,7 +106,8 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
                     ),
                   ),
                   child: const Text(
-                    'Skip',
+                    //'Skip',
+                    'Bỏ qua',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,

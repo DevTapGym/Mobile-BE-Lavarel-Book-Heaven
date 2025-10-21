@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:heaven_book_app/themes/format_price.dart';
+import 'firebase_options.dart';
 import 'package:heaven_book_app/bloc/address/address_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_event.dart';
 import 'package:heaven_book_app/bloc/auth/auth_bloc.dart';
@@ -8,9 +11,13 @@ import 'package:heaven_book_app/bloc/auth/auth_state.dart';
 import 'package:heaven_book_app/bloc/book/book_bloc.dart';
 import 'package:heaven_book_app/bloc/book/book_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_bloc.dart';
+import 'package:heaven_book_app/bloc/cart/cart_event.dart';
 import 'package:heaven_book_app/bloc/cart/cart_state.dart';
 import 'package:heaven_book_app/bloc/order/order_bloc.dart';
+import 'package:heaven_book_app/bloc/payment/payment_bloc.dart';
+import 'package:heaven_book_app/bloc/promotion/promotion_bloc.dart';
 import 'package:heaven_book_app/bloc/user/user_bloc.dart';
+import 'package:heaven_book_app/screens/Orders/buy_now_screen.dart';
 import 'package:heaven_book_app/services/book_service.dart';
 import 'package:heaven_book_app/services/cart_service.dart';
 import 'package:heaven_book_app/screens/Auth/active_screen.dart';
@@ -38,11 +45,15 @@ import 'package:heaven_book_app/services/address_service.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 import 'package:heaven_book_app/services/auth_service.dart';
 import 'package:heaven_book_app/services/order_service.dart';
+import 'package:heaven_book_app/services/payment_service.dart';
+import 'package:heaven_book_app/services/promotion_service.dart';
 import 'package:heaven_book_app/themes/app_colors.dart';
 import 'screens/Auth/onboarding_wrapper.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FormatPrice.testFirebaseAuth();
   final storage = FlutterSecureStorage();
   final authService = AuthService();
   final apiClient = ApiClient(storage, authService);
@@ -51,6 +62,8 @@ void main() {
   final bookRepository = BookService(apiClient);
   final addressService = AddressService(apiClient);
   final orderService = OrderService(apiClient);
+  final paymentService = PaymentService(apiClient);
+  final promotionService = PromotionService(apiClient);
 
   runApp(
     MultiBlocProvider(
@@ -67,6 +80,10 @@ void main() {
           create: (_) => AddressBloc(addressService)..add(LoadAddresses()),
         ),
         BlocProvider<OrderBloc>(create: (_) => OrderBloc(orderService)),
+        BlocProvider<PaymentBloc>(create: (_) => PaymentBloc(paymentService)),
+        BlocProvider<PromotionBloc>(
+          create: (_) => PromotionBloc(promotionService),
+        ),
       ],
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -111,6 +128,7 @@ class MyApp extends StatelessWidget {
 
         '/cart': (context) => const CartScreen(),
         '/check-out': (context) => const CheckOutScreen(),
+        '/buy-now': (context) => const BuyNowScreen(),
 
         '/profile': (context) => const ProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
@@ -156,6 +174,12 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<CartBloc>().add(LoadCart());
   }
 
   @override
@@ -208,19 +232,22 @@ class _MainScreenState extends State<MainScreen> {
                   _buildNavItem(
                     Icons.home_outlined,
                     Icons.home,
-                    'Home',
+                    //'Home',
+                    'Trang Chủ',
                     _selectedIndex == 0,
                   ),
                   _buildNavItem(
                     Icons.receipt_long_outlined,
                     Icons.receipt_long,
-                    'Orders',
+                    //'Orders',
+                    'Đơn Hàng',
                     _selectedIndex == 1,
                   ),
                   _buildNavItem(
                     Icons.shopping_cart_outlined,
                     Icons.shopping_cart,
-                    'Cart',
+                    //'Cart',
+                    'Giỏ Hàng',
                     _selectedIndex == 2,
                     badgeCount: badgeCount,
                   ),

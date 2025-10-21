@@ -78,7 +78,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Touch a book, reach a little piece of heaven',
+                //'Touch a book, reach a little piece of heaven',
+                'Nơi sách chạm đến tâm hồn bạn',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 18, color: AppColors.text),
               ),
@@ -140,7 +141,8 @@ class OnboardingScreen1 extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: const Text(
-                  'Welcome to Heaven Book, your literary sanctuary! Explore endless stories, from classics to bestsellers',
+                  //'Welcome to Heaven Book, your literary sanctuary! Explore endless stories, from classics to bestsellers',
+                  'Chào mừng đến với Heaven Book, thiên đường sách của bạn! Khám phá vô vàn câu chuyện.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -190,7 +192,8 @@ class OnboardingScreen2 extends StatelessWidget {
                   ),
                   const SizedBox(height: 160),
                   const Text(
-                    'Endless Book Choices',
+                    //'Endless Book Choices',
+                    'Vô vàn lựa chọn sách',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
@@ -208,7 +211,8 @@ class OnboardingScreen2 extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'From bestsellers to hidden gems, explore a world of books waiting to be discovered. Your perfect read is just a tap away!',
+                    //'From bestsellers to hidden gems, explore a world of books waiting to be discovered. Your perfect read is just a tap away!',
+                    'Khám phá từ những cuốn sách nổi tiếng đến những tác phẩm ít người biết — cả thế giới sách đang chờ bạn!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
@@ -258,7 +262,8 @@ class OnboardingScreen3 extends StatelessWidget {
               ),
               const SizedBox(height: 60),
               const Text(
-                'Surprisingly\nLow Prices',
+                //'Surprisingly\nLow Prices',
+                'Giá cả bất ngờ',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 36,
@@ -278,7 +283,8 @@ class OnboardingScreen3 extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: const Text(
-                  'Discover a vast collection of books at unbeatable prices. Shop smart and enjoy reading without breaking the bank!',
+                  //'Discover a vast collection of books at unbeatable prices. Shop smart and enjoy reading without breaking the bank!',
+                  'Khám phá kho sách khổng lồ với mức giá không thể hấp dẫn hơn. Mua sắm thông minh - đọc sách thỏa ga không lo về giá!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -313,7 +319,8 @@ class OnboardingScreen3 extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      'Get Started',
+                      //'Get Started',
+                      'Bắt đầu ngay',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,

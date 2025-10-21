@@ -37,6 +37,7 @@ class UpdateAddress extends AddressEvent {
   final String recipientName;
   final String address;
   final String phoneNumber;
+  final int tagId;
   final bool isDefault;
 
   UpdateAddress({
@@ -44,6 +45,7 @@ class UpdateAddress extends AddressEvent {
     required this.recipientName,
     required this.address,
     required this.phoneNumber,
+    required this.tagId,
     required this.isDefault,
   });
 
@@ -53,6 +55,7 @@ class UpdateAddress extends AddressEvent {
     recipientName,
     address,
     phoneNumber,
+    tagId,
     isDefault,
   ];
 }

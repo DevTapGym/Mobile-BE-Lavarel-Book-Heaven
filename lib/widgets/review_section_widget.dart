@@ -28,7 +28,8 @@ class ReviewSectionWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Reviews',
+                //'Reviews',
+                'Đánh giá',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -81,7 +82,8 @@ class ReviewSectionWidget extends StatelessWidget {
                   Navigator.pushNamed(context, '/detail-review');
                 },
                 icon: Text(
-                  'View All Reviews',
+                  //'View All Reviews',
+                  'Xem tất cả đánh giá',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
