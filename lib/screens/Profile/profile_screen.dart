@@ -31,13 +31,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Icon(Icons.logout, color: Colors.red, size: 28),
               SizedBox(width: 12),
               Text(
-                'Logout',
+                //'Logout',
+                'Đăng xuất',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
               ),
             ],
           ),
           content: Text(
-            'Are you sure you want to logout?',
+            //'Are you sure you want to logout?',
+            'Bạn có chắc chắn muốn đăng xuất không?',
             style: TextStyle(fontSize: 16),
           ),
           actions: <Widget>[
@@ -46,7 +48,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.of(context).pop(); // Đóng dialog
               },
               child: Text(
-                'Cancel',
+                //'Cancel',
+                'Hủy',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 16,
@@ -66,7 +69,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               child: Text(
-                'Logout',
+                //'Logout',
+                'Đăng xuất',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -383,7 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 backgroundImage:
                                     user.avatarUrl != null
                                         ? Image.network(
-                                          'http://10.0.2.2:8000${user.avatarUrl}',
+                                          '${user.avatarUrl}',
                                           errorBuilder: (
                                             context,
                                             error,
@@ -397,7 +401,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           },
                                         ).image
                                         : NetworkImage(
-                                          'https://i.pinimg.com/1200x/15/b2/dd/15b2dde4fae9ee8f9b748b8b2a832415.jpg',
+                                          'http://10.0.2.2:8000${user.avatarUrl}',
                                         ),
                               ),
                             ),

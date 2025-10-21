@@ -1826,6 +1826,7 @@ class _OrdersScreenState extends State<OrdersScreen>
             );
             // Reload lại danh sách đơn hàng
             Future.delayed(Duration(milliseconds: 500), () {
+              // ignore: use_build_context_synchronously
               context.read<OrderBloc>().add(LoadAllOrders());
             });
           }

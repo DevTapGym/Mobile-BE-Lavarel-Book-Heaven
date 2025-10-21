@@ -13,6 +13,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       add(TokenExpiredEvent());
     });
 
+    on<LoginWithGoogleRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final result = await authService.loginWithGoogle();
+
+        final token = result['token'] as String;
+        final isActive = result['isActive'] as bool;
+
+        emit(AuthSuccess(token: token, isActive: isActive));
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
+      }
+    });
+
     on<LogoutRequested>((event, emit) async {
       emit(AuthLoading());
       try {
@@ -85,9 +99,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             return;
           }
 
-          emit(
-            AuthSuccess(token: accessToken, isActive: isActive.contains('1')),
-          );
+          emit(AuthSuccess(token: accessToken, isActive: isActive == 'true'));
         }
       } catch (e) {
         emit(AuthLoggedOut());
