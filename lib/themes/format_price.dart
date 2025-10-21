@@ -1,3 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+
 class FormatPrice {
   static String formatPrice(double price) {
     String priceStr = price.toStringAsFixed(0);
@@ -14,5 +17,14 @@ class FormatPrice {
     }
 
     return '$resultđ';
+  }
+
+  static void testFirebaseAuth() async {
+    try {
+      await FirebaseAuth.instance.signInAnonymously();
+      debugPrint('✅ Firebase Auth hoạt động!');
+    } catch (e) {
+      debugPrint('❌ Firebase Auth lỗi: $e');
+    }
   }
 }
