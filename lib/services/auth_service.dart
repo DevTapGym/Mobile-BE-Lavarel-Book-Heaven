@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-// import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-// import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:heaven_book_app/model/user.dart';
 import 'package:heaven_book_app/services/api_client.dart';
 
@@ -21,101 +21,113 @@ class AuthService {
     apiClient = ApiClient(_secureStorage, this);
   }
 
-  // Future<Map<String, dynamic>> loginWithGoogle() async {
-  //   try {
-  //     final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
-  //     final fb_auth.FirebaseAuth firebaseAuth = fb_auth.FirebaseAuth.instance;
+  Future<Map<String, dynamic>> loginWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
+      final fb_auth.FirebaseAuth firebaseAuth = fb_auth.FirebaseAuth.instance;
 
-  //     // 1️⃣ Đăng nhập Google
-  //     final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-  //     if (googleUser == null) {
-  //       throw Exception('Người dùng đã hủy đăng nhập Google');
-  //     }
+      await googleSignIn.signOut();
+      await fb_auth.FirebaseAuth.instance.signOut();
 
-  //     // 2️⃣ Lấy token từ Google
-  //     final GoogleSignInAuthentication googleAuth =
-  //         await googleUser.authentication;
+      // 1️⃣ Đăng nhập Google
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception('Người dùng đã hủy đăng nhập Google');
+      }
 
-  //     // 3️⃣ Đăng nhập Firebase bằng credential
-  //     final credential = fb_auth.GoogleAuthProvider.credential(
-  //       accessToken: googleAuth.accessToken,
-  //       idToken: googleAuth.idToken,
-  //     );
+      // 2️⃣ Lấy token từ Google
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
-  //     final fb_auth.UserCredential userCredential = await firebaseAuth
-  //         .signInWithCredential(credential);
-  //     final user = userCredential.user;
+      // 3️⃣ Đăng nhập Firebase bằng credential
+      final credential = fb_auth.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-  //     if (user == null) {
-  //       throw Exception('Không thể đăng nhập Firebase.');
-  //     }
+      final fb_auth.UserCredential userCredential = await firebaseAuth
+          .signInWithCredential(credential);
+      final user = userCredential.user;
 
-  //     // 4️⃣ Lấy token xác thực Firebase gửi về BE (nếu BE kiểm tra)
-  //     final idToken = await user.getIdToken();
+      if (user == null) {
+        throw Exception('Không thể đăng nhập Firebase.');
+      }
 
-  //     // 5️⃣ Gửi thông tin đến Backend
-  //     final response = await apiClient.publicDio.post(
-  //       '/auth/google',
-  //       data: {
-  //         "name": user.displayName,
-  //         "email": user.email,
-  //         "imageUrl": user.photoURL,
-  //         "firebase_token": idToken, // tùy backend có dùng hay không
-  //       },
-  //     );
+      // 4️⃣ Lấy token xác thực Firebase gửi về BE (nếu BE kiểm tra)
+      final idToken = await user.getIdToken();
 
-  //     if (response.statusCode == 200 && response.data['data'] != null) {
-  //       final data = response.data['data'];
+      // 5️⃣ Gửi thông tin đến Backend
+      final response = await apiClient.publicDio.post(
+        '/auth/login-google',
+        data: {
+          "name": user.displayName,
+          "email": user.email,
+          "avatar": user.photoURL,
+          "firebase_token": idToken, // tùy backend có dùng hay không
+        },
+      );
 
-  //       // 6️⃣ Lưu Access Token
-  //       await _secureStorage.write(
-  //         key: 'access_token',
-  //         value: data['access_token'],
-  //       );
+      if (response.statusCode == 200 && response.data['data'] != null) {
+        final data = response.data['data'];
 
-  //       // 7️⃣ Lưu Refresh Token (nếu có)
-  //       final setCookieHeader = response.headers['set-cookie'];
-  //       if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
-  //         final refreshCookie = setCookieHeader
-  //             .map((str) => Cookie.fromSetCookieValue(str))
-  //             .firstWhere(
-  //               (c) => c.name == 'refresh_token',
-  //               orElse: () => Cookie('refresh_token', ''),
-  //             );
+        // 6️⃣ Lưu Access Token
+        await _secureStorage.write(
+          key: 'access_token',
+          value: data['access_token'],
+        );
 
-  //         if (refreshCookie.value.isNotEmpty) {
-  //           await _secureStorage.write(
-  //             key: 'refresh_token',
-  //             value: refreshCookie.value,
-  //           );
-  //           debugPrint('✅ Refresh token đã lưu sau Google login');
-  //         }
-  //       }
+        // 7️⃣ Lưu Refresh Token (nếu có)
+        final setCookieHeader = response.headers['set-cookie'];
+        if (setCookieHeader != null && setCookieHeader.isNotEmpty) {
+          final refreshCookie = setCookieHeader
+              .map((str) => Cookie.fromSetCookieValue(str))
+              .firstWhere(
+                (c) => c.name == 'refresh_token',
+                orElse: () => Cookie('refresh_token', ''),
+              );
 
-  //       final userData = data['account'] ?? {};
-  //       final isActiveValue = userData['is_active'] ?? 0;
-  //       await _secureStorage.write(
-  //         key: 'is_active',
-  //         value: isActiveValue.toString(),
-  //       );
+          if (refreshCookie.value.isNotEmpty) {
+            await _secureStorage.write(
+              key: 'refresh_token',
+              value: refreshCookie.value,
+            );
+            debugPrint('✅ Refresh token đã lưu sau Google login');
+          }
+        }
 
-  //       final isActive = userData['is_active'] == 1;
-  //       debugPrint('✅ Google login thành công: ${user.email}');
-  //       return {
-  //         'token': data['access_token'],
-  //         'user': userData,
-  //         'isActive': isActive,
-  //       };
-  //     } else {
-  //       throw Exception(
-  //         response.data['message'] ?? 'Đăng nhập Google thất bại',
-  //       );
-  //     }
-  //   } catch (e) {
-  //     debugPrint('❌ Lỗi loginWithGoogle: $e');
-  //     throw Exception('Đăng nhập Google thất bại: $e');
-  //   }
-  // }
+        final userData = data['account'] ?? {};
+        final isActiveValue = userData['is_active'] ?? false;
+        await _secureStorage.write(
+          key: 'is_active',
+          value: isActiveValue.toString(),
+        );
+
+        final isActive = userData['is_active'] == true;
+        debugPrint('✅ Google login thành công: ${user.email}');
+        return {
+          'token': data['access_token'],
+          'user': userData,
+          'isActive': isActive,
+        };
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Đăng nhập Google thất bại',
+        );
+      }
+    } on DioException catch (dioError) {
+      debugPrint('❌ DioException: ${dioError.message}');
+
+      if (dioError.response != null) {
+        debugPrint('Status code: ${dioError.response?.statusCode}');
+        debugPrint('Data: ${dioError.response?.data}');
+        debugPrint('Headers: ${dioError.response?.headers}');
+      }
+      throw Exception('Lỗi đăng nhập google: ${dioError.message}');
+    } catch (e) {
+      debugPrint('❌ Lỗi loginWithGoogle: $e');
+      throw Exception('Đăng nhập Google thất bại: $e');
+    }
+  }
 
   Future<User> uploadAvatar(File imageFile) async {
     try {
@@ -291,13 +303,13 @@ class AuthService {
 
         // Lưu trạng thái user
         final userData = data['account'] ?? {};
-        final isActiveValue = userData['is_active'] ?? 0;
+        final isActiveValue = userData['is_active'] ?? false;
         await _secureStorage.write(
           key: 'is_active',
           value: isActiveValue.toString(),
         );
 
-        final isActive = userData['is_active'] == 1;
+        final isActive = userData['is_active'] == true;
         return {
           'token': data['access_token'],
           'user': userData,
@@ -363,7 +375,7 @@ class AuthService {
         return {
           'token': newAccessToken,
           'user': data['user'] ?? {},
-          'isActive': (data['user']?['is_active'] ?? 0) == 1,
+          'isActive': (data['user']?['is_active'] ?? false) == true,
           'success': true,
         };
       } else {

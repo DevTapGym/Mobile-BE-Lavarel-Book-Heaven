@@ -29,6 +29,7 @@ class _DetailScreenState extends State<DetailScreen>
   int quantity = 1;
   int _currentImageIndex = 0;
   bool _isInitialized = false;
+  String from = '';
 
   // Social media options data
   final List<Map<String, dynamic>> _socialMediaOptions = [
@@ -179,6 +180,7 @@ class _DetailScreenState extends State<DetailScreen>
 
       if (args != null) {
         final bookId = args['bookId'];
+        from = args['from'] ?? '';
         context.read<BookBloc>().add(LoadBookDetail(bookId));
       }
     }
@@ -315,8 +317,13 @@ class _DetailScreenState extends State<DetailScreen>
           ),
         ),
         onPressed: () {
-          context.read<BookBloc>().add(LoadBooks());
-          Navigator.pop(context);
+          if (from == 'result') {
+            context.read<BookBloc>().add(LoadAllBooks());
+            Navigator.pop(context);
+          } else {
+            context.read<BookBloc>().add(LoadBooks());
+            Navigator.pop(context);
+          }
         },
       ),
       actions: [
