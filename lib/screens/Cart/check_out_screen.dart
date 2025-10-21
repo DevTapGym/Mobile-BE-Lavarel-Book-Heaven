@@ -1215,7 +1215,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                         padding: EdgeInsets.only(left: 12),
                         child: _buildSummaryRow(
                           //'- Member Voucher',
-                          '- Giảm giá đơn hàng',
+                          '- Mã giảm giá',
                           '-${FormatPrice.formatPrice(isFreeShip ? 0.0 : promotionDiscount)}',
                         ),
                       ),

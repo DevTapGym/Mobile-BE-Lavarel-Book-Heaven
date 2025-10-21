@@ -901,7 +901,7 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
             padding: EdgeInsets.only(left: 12),
             child: _buildSummaryRow(
               //'- Shipping Voucher',
-              '- Voucher Vận Chuyển',
+              '- Giảm phí vận chuyển',
               '-${FormatPrice.formatPrice(0.0)}',
             ),
           ),
@@ -909,7 +909,7 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
             padding: EdgeInsets.only(left: 12),
             child: _buildSummaryRow(
               //'- Member Voucher',
-              '- Voucher Thành Viên',
+              '- Mã giảm giá',
               '-${FormatPrice.formatPrice(0.0)}',
             ),
           ),
@@ -917,7 +917,7 @@ class _BuyNowScreenState extends State<BuyNowScreen> {
             padding: EdgeInsets.only(left: 12),
             child: _buildSummaryRow(
               //'- Product Voucher',
-              '- Voucher Sản Phẩm',
+              '- Giảm giá sản phẩm',
               '-${FormatPrice.formatPrice(discount)}',
             ),
           ),

@@ -17,17 +17,11 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  // Định dạng số với dấu chấm ngăn cách 3 số
-  bool isEditMode = false;
-
   // Calculate total price of selected items
   double _calculateTotalPrice(List<CartItem> cartItems) {
     return cartItems.fold<double>(0, (sum, item) {
       if (item.isSelected) {
-        // Tính giá sau khi giảm giá
-        final discountedPrice =
-            item.unitPrice - (item.unitPrice * item.sale / 100);
-        return sum + (discountedPrice * item.quantity);
+        return sum + (item.unitPrice * item.quantity);
       }
       return sum;
     });
@@ -45,60 +39,13 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
-  void _addToWishlist() {
-    //final selectedItems = cartItems.where((item) => item['isSelected'] == true).toList();
-  }
-
-  Future<void> _removeSelectedItems(List<CartItem> cartItems) async {
-    final selectedItems = cartItems.where((item) => item.isSelected).toList();
-
-    if (selectedItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            //'No items selected to remove'
-            'Chưa có mục nào được chọn để xóa',
-          ),
-          duration: Duration(seconds: 2),
-          backgroundColor: AppColors.primaryDark,
-        ),
-      );
-      return;
-    } else {
-      final cartBloc = context.read<CartBloc>();
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-      for (var item in selectedItems) {
-        cartBloc.add(RemoveCartItem(item.id));
-        await Future.delayed(Duration(milliseconds: 1000));
-      }
-
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              //'Selected items removed from cart'
-              'Đã xóa các mục đã chọn khỏi giỏ hàng',
-            ),
-            duration: Duration(seconds: 2),
-            backgroundColor: AppColors.primaryDark,
-          ),
-        );
-
-        setState(() {
-          isEditMode = false;
-        });
-      }
-    }
-  }
-
   // Show total price popup using BottomSheet
   void _showTotalPricePopup(BuildContext context, List<CartItem> cartItems) {
     final selectedItems = cartItems.where((item) => item.isSelected).toList();
     final subtotal = _calculateTotalPrice(cartItems);
     final totalSavings = _calculateTotalSavings(cartItems);
     final shipping = 30000.0; // Fixed shipping cost
-    final finalAmount = subtotal + shipping;
+    final finalAmount = subtotal + shipping - totalSavings;
 
     showModalBottomSheet(
       context: context,
@@ -171,7 +118,7 @@ class _CartScreenState extends State<CartScreen> {
                 Padding(
                   padding: EdgeInsets.only(left: 12),
                   child: _buildSummaryRow(
-                    '- Giảm giá từ sale',
+                    '- Giảm giá sản phẩm',
                     '-${FormatPrice.formatPrice(totalSavings)}',
                   ),
                 ),
@@ -292,19 +239,6 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               ),
               centerTitle: true,
-              actions: [
-                TextButton(
-                  child: Text(
-                    isEditMode ? 'Done' : 'Edit',
-                    style: TextStyle(color: AppColors.black70, fontSize: 16),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      isEditMode = !isEditMode;
-                    });
-                  },
-                ),
-              ],
             ),
             body: Container(
               height: double.infinity,
@@ -362,15 +296,12 @@ class _CartScreenState extends State<CartScreen> {
                   CustomCircleCheckbox(
                     value: cartItems.every((item) => item.isSelected),
                     onChanged: (value) {
-                      setState(() {
-                        for (var item in cartItems) {
-                          item.isSelected = value!;
+                      final List<int> allCartItemIds =
+                          cartItems.map((item) => item.id).toList();
 
-                          context.read<CartBloc>().add(
-                            ToggleCartItemSelection(item.id, item.isSelected),
-                          );
-                        }
-                      });
+                      context.read<CartBloc>().add(
+                        ToggleAllCartItemSelection(allCartItemIds, value!),
+                      );
                     },
                   ),
                   SizedBox(width: 8),
@@ -386,149 +317,68 @@ class _CartScreenState extends State<CartScreen> {
                 ],
               ),
               Spacer(),
-              if (!isEditMode) ...[
-                GestureDetector(
-                  onTap:
-                      hasSelected
-                          ? () => _showTotalPricePopup(context, cartItems)
-                          : null, // ← Truyền cartItems
-                  child: Opacity(
-                    opacity: hasSelected ? 1.0 : 0.5,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              FormatPrice.formatPrice(
-                                _calculateTotalPrice(cartItems),
-                              ), // ← Truyền cartItems
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
+              GestureDetector(
+                onTap:
+                    hasSelected
+                        ? () => _showTotalPricePopup(context, cartItems)
+                        : null, // ← Truyền cartItems
+                child: Opacity(
+                  opacity: hasSelected ? 1.0 : 0.5,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            FormatPrice.formatPrice(
+                              _calculateTotalPrice(cartItems),
+                            ), // ← Truyền cartItems
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: AppColors.primaryDark,
-                            ),
-                          ],
-                        ),
-                        Text(
-                          //'Save ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
-                          'Tiết kiệm ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
-                          style: TextStyle(fontSize: 14, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Spacer(),
-                Container(
-                  width: 140,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryDark,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: TextButton(
-                    onPressed: () {
-                      if (hasSelected) {
-                        Navigator.pushNamed(context, '/check-out');
-                      }
-                    },
-                    child: Text(
-                      //'Check out (${state.cart.items.where((item) => item.isSelected).length})', // ← Truyền cartItems
-                      'Thanh toán (${cartItems.where((item) => item.isSelected).length})', // ← Truyền cartItems
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                          ),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.primaryDark,
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ),
-              ] else ...[
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                  decoration: BoxDecoration(
-                    color:
-                        hasSelected
-                            ? AppColors.primaryDark
-                            : AppColors.primaryDark.withAlpha(125),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(2, 2),
+                      Text(
+                        //'Save ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
+                        'Tiết kiệm ${FormatPrice.formatPrice(_calculateTotalSavings(cartItems))}', // ← Truyền cartItems
+                        style: TextStyle(fontSize: 14, color: Colors.black54),
                       ),
                     ],
                   ),
-                  child: TextButton(
-                    onPressed: hasSelected ? _addToWishlist : null,
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      disabledForegroundColor: Colors.white70,
-                    ),
-                    child: Text(
-                      //'Add to Wish List',
-                      'Thêm vào danh sách yêu thích',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Spacer(),
+              Container(
+                width: 140,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryDark,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: TextButton(
+                  onPressed: () {
+                    if (hasSelected) {
+                      Navigator.pushNamed(context, '/check-out');
+                    }
+                  },
+                  child: Text(
+                    //'Check out (${state.cart.items.where((item) => item.isSelected).length})', // ← Truyền cartItems
+                    'Thanh toán (${cartItems.where((item) => item.isSelected).length})', // ← Truyền cartItems
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                SizedBox(width: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                  decoration: BoxDecoration(
-                    color:
-                        hasSelected
-                            ? AppColors.discountRed
-                            : AppColors.discountRed.withAlpha(125),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(2, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextButton(
-                    onPressed:
-                        hasSelected
-                            ? () => _removeSelectedItems(cartItems)
-                            : null, // ← Truyền cartItems
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      disabledForegroundColor: Colors.white70,
-                    ),
-                    child: Text(
-                      //'Remove',
-                      'Xóa',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         );
@@ -718,10 +568,7 @@ class _CartScreenState extends State<CartScreen> {
                           style: TextStyle(color: Colors.black54, fontSize: 15),
                         ),
                         Text(
-                          FormatPrice.formatPrice(
-                            items.unitPrice -
-                                (items.unitPrice * items.sale / 100),
-                          ),
+                          FormatPrice.formatPrice(items.unitPrice),
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
@@ -731,7 +578,9 @@ class _CartScreenState extends State<CartScreen> {
                         Row(
                           children: [
                             Text(
-                              FormatPrice.formatPrice(items.unitPrice),
+                              FormatPrice.formatPrice(
+                                items.unitPrice * (1 + (items.sale / 100)),
+                              ),
                               style: TextStyle(
                                 decoration: TextDecoration.lineThrough,
                                 decorationColor: Colors.grey,
@@ -1114,9 +963,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      FormatPrice.formatPrice(
-                        book.price - (book.price * book.saleOff / 100),
-                      ),
+                      FormatPrice.formatPrice(book.price),
                       style: TextStyle(
                         color: AppColors.primaryDark,
                         fontSize: 18,
