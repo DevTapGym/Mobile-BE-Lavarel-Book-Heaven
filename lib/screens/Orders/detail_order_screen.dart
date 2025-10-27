@@ -458,7 +458,7 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                     padding: EdgeInsets.only(left: 12),
                     child: _buildSummaryRow(
                       //'- Shipping Voucher',
-                      '- Giảm giá vận chuyển',
+                      '- Giảm phí vận chuyển',
                       '-0 đ',
                     ),
                   ),
@@ -466,7 +466,7 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
                     padding: EdgeInsets.only(left: 12),
                     child: _buildSummaryRow(
                       //'- Member Discount',
-                      '- Giảm giá thành viên',
+                      '- Mã giảm giá',
                       '-0 đ',
                     ),
                   ),

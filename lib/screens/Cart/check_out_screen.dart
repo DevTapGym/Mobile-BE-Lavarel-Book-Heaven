@@ -1215,7 +1215,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                         padding: EdgeInsets.only(left: 12),
                         child: _buildSummaryRow(
                           //'- Member Voucher',
-                          '- Giảm giá đơn hàng',
+                          '- Mã giảm giá',
                           '-${FormatPrice.formatPrice(isFreeShip ? 0.0 : promotionDiscount)}',
                         ),
                       ),
@@ -1524,7 +1524,11 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 24),
+                  Icon(
+                    Icons.error_outline_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(

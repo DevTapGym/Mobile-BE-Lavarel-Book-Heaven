@@ -63,10 +63,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final token = result['token'] as String;
         final isActive = result['isActive'] as bool;
 
-        if (isActive) {
-          emit(AuthSuccess(token: token, isActive: isActive));
-          return;
-        }
         emit(AuthSuccess(token: token, isActive: isActive));
       } catch (e) {
         emit(AuthFailure(e.toString()));

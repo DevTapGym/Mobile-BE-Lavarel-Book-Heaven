@@ -108,10 +108,13 @@ class OrderService {
         debugPrint('Data: ${dioError.response?.data}');
         debugPrint('Headers: ${dioError.response?.headers}');
       }
-      throw Exception('Lỗi khi tạo đơn hàng: ${dioError.message}');
+      final msg =
+          dioError.response?.data?['message'] ?? 'Lỗi kết nối đến server';
+      debugPrint('Chi tiết lỗi: $msg');
+      throw msg; // 👉 chỉ ném chuỗi lỗi, không bọc trong Exception
     } catch (e) {
       debugPrint('Error creating order: $e');
-      throw Exception('Error creating order: $e');
+      throw Exception('Lỗi tạo đơn hàng: $e');
     }
   }
 
@@ -159,7 +162,10 @@ class OrderService {
       } else {
         debugPrint('Message: ${dioError.message}');
       }
-      throw Exception('Lỗi ${dioError.message}');
+      final msg =
+          dioError.response?.data?['message'] ?? 'Lỗi kết nối đến server';
+      debugPrint('Chi tiết lỗi: $msg');
+      throw msg; // 👉 chỉ ném chuỗi lỗi, không bọc trong Exception
     } catch (e) {
       debugPrint('Error creating order: $e');
       throw Exception('Error creating order: $e');

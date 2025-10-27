@@ -385,9 +385,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: CircleAvatar(
                                 radius: 80,
                                 backgroundImage:
-                                    user.avatarUrl != null
+                                    user.avatarUrl != null &&
+                                            user.avatarUrl!.contains(
+                                              'storage/Avatar',
+                                            )
                                         ? Image.network(
-                                          '${user.avatarUrl}',
+                                          'http://10.0.2.2:8000${user.avatarUrl}',
                                           errorBuilder: (
                                             context,
                                             error,
@@ -400,9 +403,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             );
                                           },
                                         ).image
-                                        : NetworkImage(
-                                          'http://10.0.2.2:8000${user.avatarUrl}',
-                                        ),
+                                        : NetworkImage('${user.avatarUrl}'),
                               ),
                             ),
                           ),
