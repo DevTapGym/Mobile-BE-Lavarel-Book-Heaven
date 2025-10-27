@@ -577,17 +577,18 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                         Row(
                           children: [
-                            Text(
-                              FormatPrice.formatPrice(
-                                items.unitPrice * (1 + (items.sale / 100)),
+                            if (items.sale > 0)
+                              Text(
+                                FormatPrice.formatPrice(
+                                  items.unitPrice * (1 + (items.sale / 100)),
+                                ),
+                                style: TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor: Colors.grey,
+                                  color: Colors.grey,
+                                  fontSize: 15,
+                                ),
                               ),
-                              style: TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                decorationColor: Colors.grey,
-                                color: Colors.grey,
-                                fontSize: 15,
-                              ),
-                            ),
                             SizedBox(width: 8),
                             if (items.sale > 0)
                               Container(

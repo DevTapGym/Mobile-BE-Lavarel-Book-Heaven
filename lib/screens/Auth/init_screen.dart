@@ -41,7 +41,7 @@ class _InitScreenState extends State<InitScreen> {
       debugPrint('🔍 [InitScreen] Is active: $isActive');
 
       // Case 1: Không có token hoặc chưa active -> Login
-      if (accessToken == null || accessToken.isEmpty || isActive != '1') {
+      if (accessToken == null || accessToken.isEmpty || isActive != 'true') {
         debugPrint('❌ [InitScreen] Không có token hoặc chưa active → Login');
         _navigateToLogin();
         return;

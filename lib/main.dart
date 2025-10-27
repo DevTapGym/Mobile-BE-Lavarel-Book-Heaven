@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:heaven_book_app/themes/format_price.dart';
 import 'firebase_options.dart';
 import 'package:heaven_book_app/bloc/address/address_bloc.dart';
 import 'package:heaven_book_app/bloc/address/address_event.dart';
@@ -53,7 +52,6 @@ import 'screens/Auth/onboarding_wrapper.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FormatPrice.testFirebaseAuth();
   final storage = FlutterSecureStorage();
   final authService = AuthService();
   final apiClient = ApiClient(storage, authService);
