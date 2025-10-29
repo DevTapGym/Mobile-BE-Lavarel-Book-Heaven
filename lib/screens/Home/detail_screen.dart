@@ -8,7 +8,7 @@ import 'package:heaven_book_app/model/checkout.dart';
 import 'package:heaven_book_app/themes/format_price.dart';
 import 'package:heaven_book_app/widgets/book_section_widget.dart';
 
-import '../../widgets/review_section_widget.dart';
+//import '../../widgets/review_section_widget.dart';
 import 'package:flutter/material.dart';
 import '../../themes/app_colors.dart';
 import 'dart:async';
@@ -249,14 +249,14 @@ class _DetailScreenState extends State<DetailScreen>
                 Container(height: 12, color: Colors.grey[100]),
 
                 // Reviews section
-                ReviewSectionWidget(
-                  reviews: reviews,
-                  bookData: bookData,
-                  formatReviewCount: formatReviewCount,
-                ),
+                // ReviewSectionWidget(
+                //   reviews: reviews,
+                //   bookData: bookData,
+                //   formatReviewCount: formatReviewCount,
+                // ),
 
-                // Divider 1
-                Container(height: 12, color: Colors.grey[100]),
+                // // Divider 1
+                // Container(height: 12, color: Colors.grey[100]),
 
                 // Related books
                 Padding(

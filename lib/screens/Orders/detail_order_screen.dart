@@ -740,37 +740,37 @@ class _DetailOrderScreenState extends State<DetailOrderScreen> {
         child: Row(
           children: [
             // Add to cart button
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                label: Text(
-                  //'Review',
-                  'Đánh giá',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        offset: const Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+            // Expanded(
+            //   flex: 2,
+            //   child: ElevatedButton.icon(
+            //     onPressed: () {},
+            //     label: Text(
+            //       //'Review',
+            //       'Đánh giá',
+            //       style: TextStyle(
+            //         color: Colors.white,
+            //         fontWeight: FontWeight.bold,
+            //         fontSize: 16,
+            //         shadows: [
+            //           Shadow(
+            //             color: Colors.black.withValues(alpha: 0.2),
+            //             offset: const Offset(0, 2),
+            //             blurRadius: 4,
+            //           ),
+            //         ],
+            //       ),
+            //     ),
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: AppColors.primary,
+            //       padding: const EdgeInsets.symmetric(vertical: 16),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //     ),
+            //   ),
+            // ),
 
-            const SizedBox(width: 12),
+            // const SizedBox(width: 12),
 
             // Buy now button
             Expanded(
